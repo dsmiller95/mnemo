@@ -1,0 +1,517 @@
+#!/usr/bin/perl
+# vim: se expandtab ai tabstop=4 shiftwidth=4:
+
+# mnemo is a memory accellerator.
+#
+# This implementation is written to use a subset of CGI
+# and to store all data as files and directories.
+
+# DATA STRUCTURES
+# ===============
+# A "page" is a file of "items".
+# The page file is a text file whose name ends in ".mnemo".
+# Each line of the page file is an "item".
+# Item fields are:
+#   - uuid (output from uuidgen) [required]
+#   - question [required]
+#   - answer [required]
+#   - interval (seconds)
+#   - dueTime (time_t)
+# Fields are delimited by the ampersand "&" character.
+# Ampersands in the question and answer must be html encoded (&amp;).
+# Question and answer are to be in UTF-8.
+# If an item doesn't have an interval, it's set to a default when read.
+# If the item doesn't have a dueTime, it is ignored until no other
+#   items on the page are due.
+
+use Encode qw(encode decode);
+
+$minimumSessionDuration = 5 * 60; # prevents user from shutting self out.
+$defaultSessionDuration = 15 * 60; # Fifteen minutes.
+
+$minimumInterval = 60;
+$defaultInterval = 60;
+
+$opsDir = $ENV{'HOME'} . '/git/httpi_mnemo/mnemo_ops';
+
+$mediaDir = $ENV{'HOME'} . '/git/httpi_mnemo/htdocs/mnemo_media';
+
+&main;
+
+exit 1;
+
+
+sub main() {
+    &parseArgs($ENV{'QUERY_STRING'});
+
+    # This lets me throw a debug page just by including a hidden
+    # input in a form: <input type="hidden" name="debug" value="1">
+    if (length($parameters{'debug'}) > 0) {
+        &debugPage('DEBUG');
+        return;
+    }
+
+    # If no "user", then they haven't logged in.
+    if (length($parameters{'user'}) == 0) {
+        &loginPage;
+        return;
+    }
+    # If there's a "password" then they're trying to log in.
+    if (length($parameters{'password'}) > 0) {
+        &passwordPage;
+        return;
+    }
+    # If there's neither "password" nor "session", they need to log in.
+    if (length($parameters{'session'}) == 0) {
+        &loginPage;
+        return;
+    }
+
+    &readSessionFile;
+
+    # If they don't know the current session ID, then kick them back
+    # to the login page.  This will not interrupt a legitimate session
+    # unless they successfully log in.
+    if ($session{'sessionID'} != $parameters{'session'}) {
+        &loginPage;
+        return;
+    }
+
+    &readUserFile;
+
+    # This makes it a little more secure, and lets the user get
+    # a sense of accomplishment at the end of their session.
+    if ((time - $session{'sessionID'}) > &userSessionDuration) {
+        &finishedPage;
+        return;
+    }
+
+    if ($session{'showPage'} eq 'edit') {
+        &editPage;
+    } elsif ($session{'showPage'} eq 'answer') {
+        if ($parameters{'response'} =~ /^[0123]$/) {
+            &recordResponse;
+            &getNextDueItem;
+            $session{'showPage'} = 'question';
+            &writeSessionFile;
+            &questionPage;
+        } else {
+            &answerPage;
+        }
+    } else {
+        # assuming ($session{'showPage'} eq 'question')
+        if ($parameters{'action'} eq 'showAnswer') {
+            $session{'showPage'} = 'answer';
+            &writeSessionFile;
+            &answerPage;
+        } else {
+            &questionPage;
+        }
+    }
+}
+
+sub readPageFile() {
+    my ($line, $uuid, $question, $answer, $interval, $dueTime);
+
+    %page = ();
+    @pageUuids = (); # (this is for keeping them in order in the file)
+    open(PAGE, "<$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo") || return;
+    while ($line = <PAGE>) {
+        if (($uuid, $question, $answer, $interval, $dueTime) =
+                split(/\&/, $line)) {
+            if (0 == $interval) {
+                $interval = $defaultInterval;
+            } elsif ($minimumInterval > $interval) {
+                $interval = $minimumInterval;
+            }
+            push(@pageUuids, $uuid);
+            $page{'uuid'} = {
+                'uuid' => $uuid,
+                'question' => $question,
+                'answer' => $answer,
+                'interval' => $interval,
+                'dueTime' => $dueTime
+            };
+        }
+    }
+    close(PAGE);
+}
+
+sub writePageFile() {
+    my ($tmp);
+    open(PAGE, ">$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo");
+    foreach my $uuid (@pageUuids) {
+        %tmp = %{$page{$uuid}};
+        print PAGE join('&', $tmp{'uuid'}, $tmp{'question'},
+                        $tmp{'answer'}, $tmp{'interval'},
+                        $tmp{'dueTime'}), "\n";
+    }
+    close(PAGE);
+}
+
+sub getNextDueItem() {
+    # Start from current pagePath.
+    # If pagePath doesn't exist, looking for the next one, or finishPage.
+    # Grep for items which have come due.
+    # If none have come due, look for next pagePath or finishPage.
+    # From due items, select the one with the shortest interval.
+    # Make sure %session is updated and written.
+    # Make sure %item is populated.
+}
+
+sub recordResponse() {
+}
+
+# If not in edit mode (then assume question/answer mode):
+#   - Requiring page and item:
+#       - Show the answer to this item.
+#       - Record score for this item (redirect to ShowNextm, this page).
+#       - Switch to edit mode ((on this item) in this page).
+#   - Requiring a page:
+#       - If this page has no items then switch to edit mode,
+#           add a new item and then edit that item.
+#   - If no pages exist, switch to edit mode and redirect to
+#       Request "New Page" dialog.
+#   - DEFAULT: Show the next item (this page).  If no due items,
+#       go to next page or back to the top of the tree.
+sub questionPage() {
+    &readPageFile;
+    %item = %$page{$session{'itemUuid'}};
+    if (length(keys(%item)) == 0) {
+        &getNextDueItem;
+    }
+    if (length(keys(%item)) == 0) {
+        &finishedPage;
+        return;
+    }
+
+    print <<"EndOfQuestionPage";
+HTTP/1.0 200 OK
+Content-type: text/html; charset=utf-8
+
+<html>
+<head><title>Mnemo</title></head>
+<body bgcolor="#ffffff">
+<form name="mnemo" action="mnemo" method="get">
+<input type="hidden" name="user" value="$parameters{'user'}">
+<input type="hidden" name="session" value="$parameters{'session'}">
+$session{'pagePath'}
+<table border=1 cellpadding=5 width="250">
+<tr><td>$item{'question'}</td></tr>
+<tr><td align=center><button name="action" value="showAnswer" type="submit">Show answer</button></td></tr>
+</table>
+</form>
+</body>
+</html>
+EndOfQuestionPage
+}
+
+sub answerPage() {
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}};
+    if (length(keys(%item)) == 0) {
+        &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'} NOT FOUND.");
+        return;
+    }
+
+    print <<"EndOfAnswerPage";
+HTTP/1.0 200 OK
+Content-type: text/html; charset=utf-8
+
+<html>
+<head><title>Mnemo</title></head>
+<body bgcolor="#ffffff">
+<form name="mnemo" action="mnemo" method="get">
+<input type="hidden" name="user" value="$parameters{'user'}">
+<input type="hidden" name="session" value="$parameters{'session'}">
+<table border=1 cellpadding=5 width="250">
+<tr><td>$item{'question'}</td></tr>
+<tr><td>$item{'answer'}</td></tr>
+</table>
+<button type="submit" name="response" value="0">Huh?</button>
+<button type="submit" name="response" value="1">No</button>
+<button type="submit" name="response" value="2">Slow</button>
+<button type="submit" name="response" value="3">Yes!</button>
+</form>
+</body>
+</html>
+EndOfAnswerPage
+}
+
+# If in edit mode:
+#   - Request "New Page" dialog.
+#   - Request "Item Search" dialog. (Implement later?)
+#   - Requiring page and item:
+#       - Add the reverse of this item.
+#       - Change this item.
+#       - Delete this item.
+#   - Requiring at least a page:
+#       - Go to named item.
+#       - Go to last item in previous page.
+#       - Add a new item and then edit that item.
+#       - Move/Rename this page (and remove empty subdirectories).
+#       - Delete this page (and remove empty subdirectories).
+#   - Go to named page.
+#   - DEFAULT: Switch to learn mode, redirect to ShowNext this page.
+sub editPage() {
+    print <<"EndOfEditPage";
+HTTP/1.0 200 OK
+Content-type: text/html; charset=utf-8
+
+<html>
+<head><title>Mnemo</title></head>
+<body bgcolor="#ffffff">
+<form name="mnemo" action="mnemo" method="get">
+<input type="hidden" name="user" value="$parameters{'user'}">
+<input type="hidden" name="session" value="$parameters{'session'}">
+<table border=1 cellpadding=5>
+<tr><th>Question</th><td><input type="text" name="question" value="$item{'question'}" length="40"></td></tr>
+<tr><th>Answer</th><td><input type="text" name="answer" value="$item{'answer'}" length="40"></td></tr>
+<tr><th>Due Time</th><td><input type="text" name="dueTime" value="$item{'dueTime'}"></td></tr>
+<tr><th>Interval</th><td><input type="text" name="interval" value="$item{'interval'}"></td></tr>
+</table>
+<button type="submit" name="action" value="save">Save</button>
+<button type="reset">Reset</button>
+<br />
+</form>
+</body>
+</html>
+EndOfEditPage
+}
+
+sub isValidPagePath() {
+    my ($path) = @_;
+
+    if (length($session{'pagePath'} == 0)) {
+        return 0;
+    }
+    if (! (-r $session{'pagePath'})) {
+        return 0; # What about "-w"?
+    }
+
+    return 1;
+}
+
+sub userSessionDuration() {
+    if (0 == $user{'sessionDuration'}) {
+        return $defaultSessionDuration;
+    } elsif ($minimumSessionDuration > $user{'sessionDuration'}) {
+        return $minimumSessionDuration;
+    } else {
+        return $user{'sessionDuration'};
+    }
+}
+
+sub readLinesFromFile() {
+    my ($path) = @_;
+
+    open(INFILE, "<$path");
+    my (@lines) = <INFILE>;
+    close(INFILE);
+    chomp(@lines);
+
+    return(grep(/(^$)|(^[^\#])/, @lines));
+}
+
+sub writeLinesToFile() {
+    my ($path, @lines) = @_;
+
+    open(OUTFILE, ">$path");
+    print OUTFILE join("\n", @lines) . "\n";
+    close(OUTFILE);
+}
+
+sub readUserFile() {
+    ($user{'password'},
+     $user{'sessionDuration'}
+    ) = &readLinesFromFile("$opsDir/users/$parameters{'user'}");
+}
+
+sub writeUserFile() {
+    &writeLinesToFile("$opsDir/users/$parameters{'user'}",
+                      '# User file line fields are:',
+                      '#     password',
+                      '#     sessionDuration (seconds, zero invokes default)',
+                      '#',
+                      $user{'password'},
+                      $user{'sessionDuration'}
+                     );
+}
+
+sub readSessionFile() {
+    %session = ();
+    ($session{'sessionID'},
+     $session{'pagePath'},
+     $session{'itemUuid'},
+     $session{'showPage'}
+    ) = &readLinesFromFile("$opsDir/sessions/$parameters{'user'}");
+}
+
+sub writeSessionFile() {
+    &writeLinesToFile("$opsDir/sessions/$parameters{'user'}",
+                      '# Session file line fields are:',
+                      '#     sessionID (session init timestamp)',
+                      '#     pagePath',
+                      '#     itemUuid',
+                      '#     showPage (question, answer, edit)',
+                      '#',
+                      $session{'sessionID'},
+                      $session{'pagePath'},
+                      $session{'itemUuid'},
+                      $session{'showPage'}
+                     );
+}
+
+sub newSession() {
+    $parameters{'session'} = time;
+    &reinitSession;
+}
+
+sub reinitSession() {
+    %session = (
+        'sessionID' => $parameters{'session'},
+        'pagePath' => '',
+        'itemUuid' => '',
+        'showPage' => 'question'
+    );
+}
+
+sub passwordPage() {
+    &readUserFile;
+
+    if ($parameters{'password'} ne $user{'password'}) {
+        &debugPage("parampass: '$parameters{'password'}' userpass: '$user{'password'}'");
+        return;
+    }
+
+    # write a new session file for this user.
+    &newSession;
+    &writeSessionFile;
+
+    print <<"EndOfPasswordPage";
+HTTP/1.1 200 ok
+Refresh: 0; url=mnemo?user=$parameters{'user'}&session=$parameters{'session'}
+Content-Type: text/plain
+
+Logging in...
+EndOfPasswordPage
+}
+
+sub loginPage() {
+    print <<'EndOfLoginPage';
+HTTP/1.0 200 OK
+Content-type: text/html; charset=utf-8
+
+<html>
+<body bgcolor="#ffffff">
+<form name="mnemo" action="mnemo" method="get">
+user <input type="text" name="user" /> <br />
+password <input type="password" name="password" /> <br />
+<input type="submit" />
+</form>
+</body>
+</html>
+EndOfLoginPage
+}
+
+sub finishedPage() {
+    print <<'EndOfFinishedPage';
+HTTP/1.0 200 OK
+Content-type: text/html; charset=utf-8
+
+<html>
+<body bgcolor="#ffffff">
+This session is finished.
+<p>
+<a href="mnemo">Click here to start a new session.</a>
+</body>
+</html>
+EndOfFinishedPage
+}
+
+sub errorPage() {
+    my ($message) = @_;
+    &debugPage('ERROR: ' . $message);
+}
+
+sub debugPage() {
+    my ($message) = @_;
+
+    print "HTTP/1.0 200 OK\nContent-type: text/plain; charset=utf-8\n\n";
+
+    print "$message\n\n";
+
+    print "parameters:\n";
+    foreach my $k (sort(keys(%parameters))) {
+        print "    '$k': '$parameters{$k}'\n";
+    }
+
+    print "session:\n";
+    foreach my $k (sort(keys(%session))) {
+        print "    '$k': '$session{$k}'\n";
+    }
+
+    my ($pwd) = `pwd`;
+    chomp($pwd);
+
+    $arguments = join(',', @ARGV);
+
+    print <<"EndOfDebugPage";
+
+My uid: $<
+My gid: $(
+My euid: $>
+My egid: $)
+My arguments: $arguments
+
+PWD: $pwd
+
+HTTPi CGI env-vars:
+
+EndOfDebugPage
+
+    foreach (sort keys %ENV) {
+        print "$_=$ENV{$_}\n"
+            if (/^QUERY_/ || /^CONTENT_/ || /^REMOTE_/ || /^REQUEST_/ ||
+                /^SCRIPT_/ || /^SERVER_/ || /^HTTP_/);
+    }
+}
+
+# Note that plusses and Unicode are only parsed from parameter values.
+sub parseArgs() {
+    my ($queryString) = @_;
+
+    my ($parm, $name, $val);
+
+    %parameters = ();
+
+    foreach my $parm (split(/\&/, $queryString)) {
+        ($name, $val) = ($parm =~ /^([^=]+)=?(.*)$/);
+        $parameters{$name} = &uriDecode($val);
+    }
+}
+
+sub uriDecode() {
+    my ($encoded) = @_;
+
+    $encoded =~ s/\+/ /g; # plus becomes space
+
+    my (@parts) = split(/(\%..)/, $encoded);
+    my ($decoded) = '';
+    foreach my $part (@parts) {
+        if ($part =~ /^\%[0123456789abcdef]{2}$/i) {
+            $decoded .= (chr(hex(substr($part, 1))));
+        } else {
+            $decoded .= $part;
+        }
+    }
+
+    return decode('UTF-8', $decoded);
+}
+
+sub uuidgen() {
+    my ($uuid) = `uuidgen`;
+    chomp($uuid);
+    return($uuid);
+}
+

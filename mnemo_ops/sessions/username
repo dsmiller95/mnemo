@@ -1,0 +1,10 @@
+# Session file line fields are:
+#     sessionID (session init timestamp)
+#     pagePath
+#     itemUuid
+#     showPage (question, answer, edit)
+#
+1253023566
+/home/rmiller/httpi_mnemo/mnemo_ops/data/username
+
+question
