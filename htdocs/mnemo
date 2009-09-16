@@ -95,7 +95,8 @@ sub main() {
     } elsif ($session{'showPage'} eq 'answer') {
         if ($parameters{'response'} =~ /^[0123]$/) {
             &recordResponse;
-            &getNextDueItem;
+            %item = ();
+            $session{'itemUuid'} = '';
             $session{'showPage'} = 'question';
             &writeSessionFile;
             &questionPage;
@@ -123,7 +124,7 @@ sub readPageFile() {
     while ($line = <PAGE>) {
         chomp($line);
         if (($uuid, $question, $answer, $interval, $dueTime) =
-                split(/\&/, $line)) {
+                split(/\"/, $line)) {
             if (0 == $interval) {
                 $interval = $defaultInterval;
             } elsif ($minimumInterval > $interval) {
@@ -147,16 +148,37 @@ sub writePageFile() {
     open(PAGE, ">$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo");
     foreach my $uuid (@pageUuids) {
         %tmp = %{$page{$uuid}};
-        print PAGE join('&', $tmp{'uuid'}, $tmp{'question'},
+        print PAGE join('"', $tmp{'uuid'}, $tmp{'question'},
                         $tmp{'answer'}, $tmp{'interval'},
                         $tmp{'dueTime'}), "\n";
     }
     close(PAGE);
 }
 
+sub getNextPage() {
+    my ($i, $d, $p, $oldPath, @paths);
+    my ($getIt) = (0);
+    $oldPath = $session{'pagePath'};
+    $session{'pagePath'} = '';
+    $d = "$opsDir/data/$parameters{'user'}/";
+    @paths = `find "$d" -type f -name '*.mnemo' | sort`;
+    chomp(@paths);
+    for ($i = 0; $i <= $#paths; $i++) {
+        $p = substr(substr($paths[$i], length($d)), 0, -6);
+        if ($getIt != 0) {
+            $session{'pagePath'} = $p;
+            last;
+        } elsif ($p eq $oldPath) {
+            $getIt = 1;
+        }
+    }
+    &writeSessionFile;
+    &readPageFile;
+}
+
 sub getNextDueItem() {
     my ($fullPagePath) = $opsDir . '/data/' . $parameters{'user'} .
-                        '/' . $parameters{'pagePath'} . '.mnemo';
+                        '/' . $session{'pagePath'} . '.mnemo';
 
     # Start from current pagePath.
     # If pagePath is unreadable or doesn't exist then look for
@@ -223,7 +245,9 @@ sub recordResponse() {
     } else { # ($r == 0)
         $factor = 0.11111111; # (2/3)^2
     }
-    $factor -= ((rand) / 100.0);
+    # scatter with a little something random
+    my ($scatter) = 0.05;
+    $factor *= (((2.0 - $scatter) / 2.0) + ($scatter * rand));
     $factor *= $item{'interval'};
     if ($factor < $minimumInterval) {
         $factor = $minimumInterval;
@@ -254,6 +278,15 @@ sub questionPage() {
     %item = %{$page{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
+        &getNextDueItem;
+        @k = keys(%item);
+    }
+    while ($#k < 0) {
+        &getNextPage;
+        if (length($session{'pagePath'}) == 0) {
+            &finishedPage;
+            return;
+        }
         &getNextDueItem;
         @k = keys(%item);
     }
@@ -486,7 +519,7 @@ EndOfReportPage
             ($done, $due, $new) = (0, 0, 0);
             ($t_done, $t_due, $t_new) = (0, 0, 0);
             foreach $i (values(%page)) {
-                if (defined($$i{'dueTime'})) {
+                if (length($$i{'dueTime'}) > 0) {
                     if ($$i{'dueTime'} > $t) {
                         $done++;
                         $t_done++;
