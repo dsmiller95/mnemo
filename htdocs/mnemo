@@ -521,7 +521,7 @@ EndOfReportPage
             &readPageFile;
             ($done, $due, $new) = (0, 0, 0);
             foreach $i (values(%page)) {
-                if (length($$i{'dueTime'}) > 0) {
+                if (0 != $$i{'dueTime'}) {
                     if ($$i{'dueTime'} > $t) {
                         $done++;
                         $t_done++;

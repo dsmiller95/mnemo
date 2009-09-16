@@ -1,0 +1,36 @@
+#!/usr/bin/env perl
+
+# $Id$
+
+# Converts the .mnemo record jars into httpi_mnemo-style .mnemo files.
+
+require "record_jar.pl";
+
+foreach my $file (@ARGV) {
+        $gGroupName = $file;
+        $gGroupName =~ s/\.mnemo$//;
+
+        &load_cards($file);
+        for (my $i = 0; $i <= $#cards; $i++) {
+                print &card_to_httpiMnemo(%{$cards[$i]});
+        }
+}
+
+exit 0;
+
+sub card_to_httpiMnemo
+{
+        my (%card) = @_;
+
+        unless (defined($card{'identilo'})) {
+                $card{'identilo'} = `uuidgen`;
+                chomp($card{'identilo'});
+        }
+
+        return $card{'identilo'} . '\\' .
+                $card{'demando'} . '\\' .
+                $card{'respondo'} . '\\' .
+                $card{'pauxzo'} . '\\' .
+                $card{'matura'} . "\n";
+}
+
