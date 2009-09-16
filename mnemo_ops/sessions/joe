@@ -1,0 +1,10 @@
+# Session file line fields are:
+#     sessionID (session init timestamp)
+#     pagePath
+#     itemUuid
+#     showPage (question, answer, edit)
+#
+1253135425
+Arithmetic/01_Addition
+79fd374f-319c-4af6-ba5d-eadfabdfacdf
+question

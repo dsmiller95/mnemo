@@ -492,13 +492,22 @@ sub reinitSession() {
 }
 
 sub reportPage() {
-    my ($dh);
-    if (! opendir($dh, "$opsDir/data")) {
-        &errorPage("Couldn't open data dir.");
-        return;
+    my (@users) = ();
+
+    if ( (length($parameters{'user'}) > 0) &&
+         (-d "$opsDir/data/$parameters{'user'}") ) {
+        (@users) = ($parameters{'user'});
     }
-    my (@users) = grep(/^[^\.]/, readdir($dh));
-    closedir($dh);
+
+    if ($#users < 0) {
+        my ($dh);
+        if (! opendir($dh, "$opsDir/data")) {
+            &errorPage("Couldn't open data dir.");
+            return;
+        }
+        (@users) = grep(/^[^\.]/, readdir($dh));
+        closedir($dh);
+    }
 
     print <<'EndOfReportPage';
 HTTP/1.0 200 ok
@@ -509,7 +518,10 @@ EndOfReportPage
     $t = time;
     foreach $u (sort(@users)) {
         $parameters{'user'} = $u;
-        print "'$u':\n";
+        print "'$u': ";
+        if ($#users == 0) {
+            print "\n";
+        }
 
         ($t_done, $t_due, $t_new) = (0, 0, 0);
         $d = "$opsDir/data/$u/";
@@ -517,7 +529,9 @@ EndOfReportPage
             chomp($p);
             $p = substr(substr($p, length($d)), 0, -6);
             $session{'pagePath'} = $p;
-            print "    '$p': ";
+            if ($#users == 0) {
+                print "    '$p': ";
+            }
             &readPageFile;
             ($done, $due, $new) = (0, 0, 0);
             foreach $i (values(%page)) {
@@ -534,9 +548,14 @@ EndOfReportPage
                     $t_new++;
                 }
             }
-            print "$new new, $due due, $done done.\n";
+            if ($#users == 0) {
+                print "$new new, $due due, $done done.\n";
+            }
         }
-        print "    TOTALS: $t_new new, $t_due due, $t_done done.\n";
+        if ($#users == 0) {
+            print '    TOTALS: ';
+        }
+        print "$t_new new, $t_due due, $t_done done.\n";
     }
 }
 
@@ -579,8 +598,8 @@ Content-type: text/html; charset=utf-8
 user <input type="text" name="user" value="$parameters{'user'}" /> <br />
 password <input type="password" name="password" /> <br />
 <input type="submit" />
+<button name="report" value="1" type="submit">Generate report</button>
 </form>
-<a href="mnemo?report">(Click here for a report of all users' progress.)</a>
 </body>
 </html>
 EndOfLoginPage
