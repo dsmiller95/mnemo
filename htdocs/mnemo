@@ -150,13 +150,48 @@ sub writePageFile() {
 }
 
 sub getNextDueItem() {
+    my ($fullPagePath) = $opsDir . '/data/' . $parameters{'user'} .
+                        '/' . $parameters{'pagePath'} . '.mnemo';
+
     # Start from current pagePath.
-    # If pagePath doesn't exist, looking for the next one, or finishPage.
-    # Grep for items which have come due.
+    # If pagePath is unreadable or doesn't exist then look for
+    # the top one, or error out.
+    if (!(-r $fullPagePath)) {
+        my ($d) = "$opsDir/data/$parameters{'user'}/";
+        my ($p) = `find "$d" -type f -name '*.mnemo' | sort`;
+        chomp($p);
+        if (-r $p) {
+            $session{'pagePath'} = substr(substr($p, length($d)), 0, -6);
+        } else {
+            &errorPage("Can't seem to find any data files.");
+            exit(1);
+        }
+    }
+    # Load the page and grep for items which have come due.
     # If none have come due, look for next pagePath or finishPage.
-    # From due items, select the one with the shortest interval.
+    # From due items, populate %item with the one with the shortest interval.
+    &readPageFile;
+    undef(%item);
+    my ($t) = time;
+    my (@newItems) = ();
+    foreach my $i (values(%page)) {
+        if (0 == $$i{'dueTime'}) {
+            push(@newItems, $i);
+        } elsif ($t >= $$i{'dueTime'}) {
+            if ( (! defined(%item)) ||
+                 ($item{'interval'} > $$i{'interval'}) ) {
+                %item = %$i;
+            }
+        }
+    }
+    if ( (! defined(%item)) && ($#newItems >= 0) ) {
+        %item = %{$newItems[0]};
+    }
     # Make sure %session is updated and written.
-    # Make sure %item is populated.
+    if (defined(%item)) {
+        $session{'itemUuid'} = $item{'uuid'};
+    }
+    &writeSessionFile;
 }
 
 sub recordResponse() {
@@ -175,12 +210,15 @@ sub recordResponse() {
 #   - DEFAULT: Show the next item (this page).  If no due items,
 #       go to next page or back to the top of the tree.
 sub questionPage() {
+    my (@k);
     &readPageFile;
-    %item = %$page{$session{'itemUuid'}};
-    if (length(keys(%item)) == 0) {
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
         &getNextDueItem;
+        @k = keys(%item);
     }
-    if (length(keys(%item)) == 0) {
+    if ($#k < 0) {
         &finishedPage;
         return;
     }
@@ -208,7 +246,7 @@ EndOfQuestionPage
 
 sub answerPage() {
     &readPageFile;
-    %item = %{$page{$session{'itemUuid'}};
+    %item = %{$page{$session{'itemUuid'}}};
     if (length(keys(%item)) == 0) {
         &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'} NOT FOUND.");
         return;
@@ -398,14 +436,14 @@ EndOfPasswordPage
 }
 
 sub loginPage() {
-    print <<'EndOfLoginPage';
+    print <<"EndOfLoginPage";
 HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
 <html>
 <body bgcolor="#ffffff">
 <form name="mnemo" action="mnemo" method="get">
-user <input type="text" name="user" /> <br />
+user <input type="text" name="user" value="$parameters{'user'}" /> <br />
 password <input type="password" name="password" /> <br />
 <input type="submit" />
 </form>
@@ -449,6 +487,16 @@ sub debugPage() {
     print "session:\n";
     foreach my $k (sort(keys(%session))) {
         print "    '$k': '$session{$k}'\n";
+    }
+
+    print "page:\n";
+    foreach my $k (sort(keys(%page))) {
+        print "    '$k': '$page{$k}'\n";
+    }
+
+    print "item:\n";
+    foreach my $k (sort(keys(%item))) {
+        print "    '$k': '$item{$k}'\n";
     }
 
     my ($pwd) = `pwd`;
