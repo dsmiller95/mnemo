@@ -34,6 +34,12 @@ $defaultInterval = 60;
 
 $opsDir = $ENV{'HOME'} . '/git/httpi_mnemo/mnemo_ops';
 
+$HOUR = 3600;
+$DAY = $HOUR * 24;
+$WEEK = $DAY * 7;
+$YEAR = $DAY * 365.25;
+$MONTH = $YEAR / 12.0;
+
 &main;
 
 exit 1;
@@ -297,6 +303,9 @@ sub questionPage() {
         return;
     }
 
+    my ($sessionDuration) = &prettyDuration(time() - $parameters{'session'});
+    my ($interval) = &prettyDuration($item{'interval'});
+
     print <<"EndOfQuestionPage";
 HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
@@ -313,9 +322,31 @@ $session{'pagePath'}
 <tr><td align=center><button name="action" value="showAnswer" type="submit">Show answer</button></td></tr>
 </table>
 </form>
+Interval for this item: $interval<br />
+Session: $sessionDuration
 </body>
 </html>
 EndOfQuestionPage
+}
+
+sub prettyDuration() {
+    my ($d) = @_;
+
+    if ($d > (2 * $YEAR)) {
+        return int($d / $YEAR) . ' years';
+    } elsif ($d > (2 * $MONTH)) {
+        return int($d / $MONTH) . ' months';
+    } elsif ($d > (2 * $WEEK)) {
+        return int($d / $WEEK) . ' weeks';
+    } elsif ($d > (2 * $DAY)) {
+        return int($d / $DAY) . ' days';
+    } elsif ($d > (2 * $HOUR)) {
+        return int($d / $HOUR) . ' hours';
+    } elsif ($d > 120) {
+        return int($d / 60) . ' minutes';
+    } else {
+        return "$d seconds";
+    }
 }
 
 sub answerPage() {
@@ -327,6 +358,9 @@ sub answerPage() {
         &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
+
+    my ($sessionDuration) = &prettyDuration(time() - $parameters{'session'});
+    my ($interval) = &prettyDuration($item{'interval'});
 
     print <<"EndOfAnswerPage";
 HTTP/1.0 200 OK
@@ -348,6 +382,8 @@ $session{'pagePath'}
 <button type="submit" name="response" value="2">Slow</button>
 <button type="submit" name="response" value="3">Yes!</button>
 </form>
+Interval for this item: $interval<br />
+Session: $sessionDuration
 </body>
 </html>
 EndOfAnswerPage
