@@ -124,7 +124,7 @@ sub readPageFile() {
     while ($line = <PAGE>) {
         chomp($line);
         if (($uuid, $question, $answer, $interval, $dueTime) =
-                split(/\"/, $line)) {
+                split(/\\/, $line)) {
             if (0 == $interval) {
                 $interval = $defaultInterval;
             } elsif ($minimumInterval > $interval) {
@@ -148,7 +148,7 @@ sub writePageFile() {
     open(PAGE, ">$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo");
     foreach my $uuid (@pageUuids) {
         %tmp = %{$page{$uuid}};
-        print PAGE join('"', $tmp{'uuid'}, $tmp{'question'},
+        print PAGE join('\\', $tmp{'uuid'}, $tmp{'question'},
                         $tmp{'answer'}, $tmp{'interval'},
                         $tmp{'dueTime'}), "\n";
     }
@@ -201,7 +201,9 @@ sub getNextDueItem() {
     undef(%item);
     my ($t) = time;
     my (@newItems) = ();
-    foreach my $i (values(%page)) {
+    my ($u, $i);
+    foreach $u (@pageUuids) {
+        $i = $page{$u};
         if (0 == $$i{'dueTime'}) {
             push(@newItems, $i);
         } elsif ($t >= $$i{'dueTime'}) {
@@ -509,6 +511,7 @@ EndOfReportPage
         $parameters{'user'} = $u;
         print "'$u':\n";
 
+        ($t_done, $t_due, $t_new) = (0, 0, 0);
         $d = "$opsDir/data/$u/";
         foreach $p (`find "$d" -type f -name '*.mnemo' | sort`) {
             chomp($p);
@@ -517,7 +520,6 @@ EndOfReportPage
             print "    '$p': ";
             &readPageFile;
             ($done, $due, $new) = (0, 0, 0);
-            ($t_done, $t_due, $t_new) = (0, 0, 0);
             foreach $i (values(%page)) {
                 if (length($$i{'dueTime'}) > 0) {
                     if ($$i{'dueTime'} > $t) {
@@ -534,7 +536,7 @@ EndOfReportPage
             }
             print "$new new, $due due, $done done.\n";
         }
-        print "    TOTAL: $t_new new, $t_due due, $t_done done.\n";
+        print "    TOTALS: $t_new new, $t_due due, $t_done done.\n";
     }
 }
 
