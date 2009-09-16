@@ -34,8 +34,6 @@ $defaultInterval = 60;
 
 $opsDir = $ENV{'HOME'} . '/git/httpi_mnemo/mnemo_ops';
 
-$mediaDir = $ENV{'HOME'} . '/git/httpi_mnemo/htdocs/mnemo_media';
-
 &main;
 
 exit 1;
@@ -46,8 +44,14 @@ sub main() {
 
     # This lets me throw a debug page just by including a hidden
     # input in a form: <input type="hidden" name="debug" value="1">
-    if (length($parameters{'debug'}) > 0) {
+    if (defined($parameters{'debug'})) {
         &debugPage('DEBUG');
+        return;
+    }
+
+    # This generates a report of all users progress.
+    if (defined($parameters{'report'})) {
+        &reportPage;
         return;
     }
 
@@ -117,6 +121,7 @@ sub readPageFile() {
     @pageUuids = (); # (this is for keeping them in order in the file)
     open(PAGE, "<$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo") || return;
     while ($line = <PAGE>) {
+        chomp($line);
         if (($uuid, $question, $answer, $interval, $dueTime) =
                 split(/\&/, $line)) {
             if (0 == $interval) {
@@ -125,7 +130,7 @@ sub readPageFile() {
                 $interval = $minimumInterval;
             }
             push(@pageUuids, $uuid);
-            $page{'uuid'} = {
+            $page{$uuid} = {
                 'uuid' => $uuid,
                 'question' => $question,
                 'answer' => $answer,
@@ -190,11 +195,45 @@ sub getNextDueItem() {
     # Make sure %session is updated and written.
     if (defined(%item)) {
         $session{'itemUuid'} = $item{'uuid'};
+    } else {
+        $session{'itemUuid'} = '';
     }
     &writeSessionFile;
 }
 
 sub recordResponse() {
+    my ($r) = $parameters{'response'};
+    my ($factor);
+    my (@k);
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        exit(1);
+    }
+
+
+    if ($r == 3) {
+        $factor = 1.5; # (3/2)
+    } elsif ($r == 2) {
+        $factor = 1.0;
+    } elsif ($r == 1) {
+        $factor = 0.66666666; # (2/3)
+    } else { # ($r == 0)
+        $factor = 0.11111111; # (2/3)^2
+    }
+    $factor -= ((rand) / 100.0);
+    $factor *= $item{'interval'};
+    if ($factor < $minimumInterval) {
+        $factor = $minimumInterval;
+    }
+    $factor = int($factor);
+
+    $item{'interval'} = $factor;
+    $item{'dueTime'} = time + $factor;
+    $page{$item{'uuid'}} = {%item};
+    &writePageFile;
 }
 
 # If not in edit mode (then assume question/answer mode):
@@ -245,10 +284,12 @@ EndOfQuestionPage
 }
 
 sub answerPage() {
+    my (@k);
     &readPageFile;
     %item = %{$page{$session{'itemUuid'}}};
-    if (length(keys(%item)) == 0) {
-        &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'} NOT FOUND.");
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
 
@@ -262,6 +303,7 @@ Content-type: text/html; charset=utf-8
 <form name="mnemo" action="mnemo" method="get">
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
+$session{'pagePath'}
 <table border=1 cellpadding=5 width="250">
 <tr><td>$item{'question'}</td></tr>
 <tr><td>$item{'answer'}</td></tr>
@@ -414,6 +456,55 @@ sub reinitSession() {
     );
 }
 
+sub reportPage() {
+    my ($dh);
+    if (! opendir($dh, "$opsDir/data")) {
+        &errorPage("Couldn't open data dir.");
+        return;
+    }
+    my (@users) = grep(/^[^\.]/, readdir($dh));
+    closedir($dh);
+
+    print <<'EndOfReportPage';
+HTTP/1.0 200 ok
+Content-Type: text/plain
+
+EndOfReportPage
+    my ($d, $p, $u, $i, $done, $due, $new, $t, $t_done, $t_due, $t_new);
+    $t = time;
+    foreach $u (sort(@users)) {
+        $parameters{'user'} = $u;
+        print "'$u':\n";
+
+        $d = "$opsDir/data/$u/";
+        foreach $p (`find "$d" -type f -name '*.mnemo' | sort`) {
+            chomp($p);
+            $p = substr(substr($p, length($d)), 0, -6);
+            $session{'pagePath'} = $p;
+            print "    '$p': ";
+            &readPageFile;
+            ($done, $due, $new) = (0, 0, 0);
+            ($t_done, $t_due, $t_new) = (0, 0, 0);
+            foreach $i (values(%page)) {
+                if (defined($$i{'dueTime'})) {
+                    if ($$i{'dueTime'} > $t) {
+                        $done++;
+                        $t_done++;
+                    } else {
+                        $due++;
+                        $t_due++;
+                    }
+                } else {
+                    $new++;
+                    $t_new++;
+                }
+            }
+            print "$new new, $due due, $done done.\n";
+        }
+        print "    TOTAL: $t_new new, $t_due due, $t_done done.\n";
+    }
+}
+
 sub passwordPage() {
     &readUserFile;
 
@@ -429,9 +520,15 @@ sub passwordPage() {
     print <<"EndOfPasswordPage";
 HTTP/1.1 200 ok
 Refresh: 0; url=mnemo?user=$parameters{'user'}&session=$parameters{'session'}
-Content-Type: text/plain
+Content-Type: text/html; charset=utf-8
 
-Logging in...
+<html>
+<head><title>Mnemo</title></head>
+<body bgcolor="#ffffff">
+Logging in... <br />
+<a href="mnemo?user=$parameters{'user'}&session=$parameters{'session'}">Click here</a> if your browser doesn't go automatically.
+</body>
+</html>
 EndOfPasswordPage
 }
 
@@ -441,12 +538,14 @@ HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
 <html>
+<head><title>Mnemo</title></head>
 <body bgcolor="#ffffff">
 <form name="mnemo" action="mnemo" method="get">
 user <input type="text" name="user" value="$parameters{'user'}" /> <br />
 password <input type="password" name="password" /> <br />
 <input type="submit" />
 </form>
+<a href="mnemo?report">(Click here for a report of all users' progress.)</a>
 </body>
 </html>
 EndOfLoginPage
@@ -491,7 +590,10 @@ sub debugPage() {
 
     print "page:\n";
     foreach my $k (sort(keys(%page))) {
-        print "    '$k': '$page{$k}'\n";
+        print "    '$k':\n";
+        foreach my $i (sort(keys(%{$page{$k}}))) {
+            print "        '$i' => '${$page{$k}}{$i}'\n";
+        }
     }
 
     print "item:\n";
