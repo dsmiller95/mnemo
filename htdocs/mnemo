@@ -305,6 +305,7 @@ sub questionPage() {
 
     my ($sessionDuration) = &prettyDuration(time() - $parameters{'session'});
     my ($interval) = &prettyDuration($item{'interval'});
+    my ($widthTerm) = &userWidthTerm;
 
     print <<"EndOfQuestionPage";
 HTTP/1.0 200 OK
@@ -317,9 +318,9 @@ Content-type: text/html; charset=utf-8
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 $session{'pagePath'}
-<table border=1 cellpadding=5 width="250">
+<table border=1 cellpadding=5 $widthTerm>
 <tr><td>$item{'question'}</td></tr>
-<tr><td align=center><button name="action" value="showAnswer" type="submit">Show answer</button></td></tr>
+<tr><td><button name="action" value="showAnswer" type="submit">Show answer</button></td></tr>
 </table>
 </form>
 Interval for this item: $interval<br />
@@ -327,6 +328,16 @@ Session: $sessionDuration
 </body>
 </html>
 EndOfQuestionPage
+}
+
+sub userWidthTerm() {
+    my ($term) = ('width="100%"');
+
+    if (0 != $user{'width'}) {
+        $term = "width=\"$user{'width'}\"";
+    }
+
+    return $term;
 }
 
 sub prettyDuration() {
@@ -361,6 +372,7 @@ sub answerPage() {
 
     my ($sessionDuration) = &prettyDuration(time() - $parameters{'session'});
     my ($interval) = &prettyDuration($item{'interval'});
+    my ($widthTerm) = &userWidthTerm;
 
     print <<"EndOfAnswerPage";
 HTTP/1.0 200 OK
@@ -373,7 +385,7 @@ Content-type: text/html; charset=utf-8
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 $session{'pagePath'}
-<table border=1 cellpadding=5 width="250">
+<table border=1 cellpadding=5 $widthTerm>
 <tr><td>$item{'question'}</td></tr>
 <tr><td>$item{'answer'}</td></tr>
 </table>
@@ -474,7 +486,8 @@ sub writeLinesToFile() {
 
 sub readUserFile() {
     ($user{'password'},
-     $user{'sessionDuration'}
+     $user{'sessionDuration'},
+     $user{'width'}
     ) = &readLinesFromFile("$opsDir/users/$parameters{'user'}");
 }
 
@@ -642,7 +655,7 @@ EndOfLoginPage
 }
 
 sub finishedPage() {
-    print <<'EndOfFinishedPage';
+    print <<"EndOfFinishedPage";
 HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
@@ -650,7 +663,7 @@ Content-type: text/html; charset=utf-8
 <body bgcolor="#ffffff">
 This session is finished.
 <p>
-<a href="mnemo">Click here to start a new session.</a>
+<a href="mnemo?user=$parameters{'user'}">Click here to start a new session.</a>
 </body>
 </html>
 EndOfFinishedPage
