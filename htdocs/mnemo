@@ -32,7 +32,7 @@ $defaultSessionDuration = 15 * 60; # Fifteen minutes.
 $minimumInterval = 60;
 $defaultInterval = 60;
 
-$opsDir = $ENV{'HOME'} . '/git/httpi_mnemo/mnemo_ops';
+$opsDir = $ENV{'HOME'} . '/git/mnemo/mnemo_ops';
 
 $HOUR = 3600;
 $DAY = $HOUR * 24;
