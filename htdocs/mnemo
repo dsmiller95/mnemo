@@ -202,7 +202,7 @@ sub getNextDueItem() {
     }
     # Load the page and grep for items which have come due.
     # If none have come due, look for next pagePath or finishPage.
-    # From due items, populate %item with the one with the shortest interval.
+    # From due items, populate %item with the one with the longest interval.
     &readPageFile;
     undef(%item);
     my ($t) = time;
@@ -214,7 +214,7 @@ sub getNextDueItem() {
             push(@newItems, $i);
         } elsif ($t >= $$i{'dueTime'}) {
             if ( (! defined(%item)) ||
-                 ($item{'interval'} > $$i{'interval'}) ) {
+                 ($item{'interval'} < $$i{'interval'}) ) {
                 %item = %$i;
             }
         }
@@ -633,7 +633,7 @@ Content-type: text/html; charset=utf-8
 <form name="mnemo" action="mnemo" method="get">
 user <input type="text" name="user" value="$parameters{'user'}" /> <br />
 password <input type="password" name="password" /> <br />
-<input type="submit" />
+<input type="submit" value="Log in" />
 <button name="report" value="1" type="submit">Generate report</button>
 </form>
 </body>

@@ -27,6 +27,10 @@ sub card_to_httpiMnemo
                 chomp($card{'identilo'});
         }
 
+        # strip newlines (make them into spaces)
+        $card{'demando'} =~ s/\r?\n/ /mg;
+        $card{'respondo'} =~ s/\r?\n/ /mg;
+
         return $card{'identilo'} . '\\' .
                 $card{'demando'} . '\\' .
                 $card{'respondo'} . '\\' .
