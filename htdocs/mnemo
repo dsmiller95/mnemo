@@ -246,13 +246,18 @@ sub recordResponse() {
 
     if ($r == 3) {
         $factor = 1.5; # (3/2)
+        $session{'response_3'}++;
     } elsif ($r == 2) {
         $factor = 1.0;
+        $session{'response_2'}++;
     } elsif ($r == 1) {
         $factor = 0.66666666; # (2/3)
+        $session{'response_1'}++;
     } else { # ($r == 0)
         $factor = 0.11111111; # (2/3)^2
+        $session{'response_0'}++;
     }
+    &writeSessionFile;
     # scatter with a little something random
     my ($scatter) = 0.05;
     $factor *= (((2.0 - $scatter) / 2.0) + ($scatter * rand));
@@ -507,7 +512,11 @@ sub readSessionFile() {
     ($session{'sessionID'},
      $session{'pagePath'},
      $session{'itemUuid'},
-     $session{'showPage'}
+     $session{'showPage'},
+     $session{'response_0'},
+     $session{'response_1'},
+     $session{'response_2'},
+     $session{'response_3'}
     ) = &readLinesFromFile("$opsDir/sessions/$parameters{'user'}");
 }
 
@@ -518,11 +527,19 @@ sub writeSessionFile() {
                       '#     pagePath',
                       '#     itemUuid',
                       '#     showPage (question, answer, edit)',
+                      '#     number of 0 responses',
+                      '#     number of 1 responses',
+                      '#     number of 2 responses',
+                      '#     number of 3 responses',
                       '#',
                       $session{'sessionID'},
                       $session{'pagePath'},
                       $session{'itemUuid'},
-                      $session{'showPage'}
+                      $session{'showPage'},
+                      $session{'response_0'},
+                      $session{'response_1'},
+                      $session{'response_2'},
+                      $session{'response_3'}
                      );
 }
 
@@ -536,7 +553,11 @@ sub reinitSession() {
         'sessionID' => $parameters{'session'},
         'pagePath' => '',
         'itemUuid' => '',
-        'showPage' => 'question'
+        'showPage' => 'question',
+        'response_0' => 0,
+        'response_1' => 0,
+        'response_2' => 0,
+        'response_3' => 0
     );
 }
 
@@ -567,7 +588,13 @@ EndOfReportPage
     $t = time;
     foreach $u (sort(@users)) {
         $parameters{'user'} = $u;
-        print "'$u': ";
+        &readSessionFile;
+        print "'$u'" .
+              " ($session{'response_0'}," .
+              "$session{'response_1'}," .
+              "$session{'response_2'}," .
+              "$session{'response_3'})" .
+              ": ";
         if ($#users == 0) {
             print "\n";
         }
@@ -655,6 +682,19 @@ EndOfLoginPage
 }
 
 sub finishedPage() {
+    my ($total) = (
+        $session{'response_0'} +
+        $session{'response_1'} +
+        $session{'response_2'} +
+        $session{'response_3'});
+    my (@percents) = ();
+    foreach my $r ( $session{'response_0'},
+                    $session{'response_1'},
+                    $session{'response_2'},
+                    $session{'response_3'} ) {
+        push(@percents, int((100.0 * $r) / $total));
+    }
+
     print <<"EndOfFinishedPage";
 HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
@@ -662,6 +702,12 @@ Content-type: text/html; charset=utf-8
 <html>
 <body bgcolor="#ffffff">
 This session is finished.
+<table border="1" cellpadding="5">
+<tr><th>Huh?</th><td align="right">$session{'response_0'}</td><td align="right">$percents[0]%</td></tr>
+<tr><th>No</th><td align="right">$session{'response_1'}</td><td align="right">$percents[1]%</td></tr>
+<tr><th>Slow</th><td align="right">$session{'response_2'}</td><td align="right">$percents[2]%</td></tr>
+<tr><th>Yes!</th><td align="right">$session{'response_3'}</td><td align="right">$percents[3]%</td></tr>
+</table>
 <p>
 <a href="mnemo?user=$parameters{'user'}">Click here to start a new session.</a>
 </body>

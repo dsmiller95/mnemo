@@ -3,8 +3,16 @@
 #     pagePath
 #     itemUuid
 #     showPage (question, answer, edit)
+#     number of 0 responses
+#     number of 1 responses
+#     number of 2 responses
+#     number of 3 responses
 #
-1253149401
+1253220901
 
 
 question
+3
+3
+3
+2
