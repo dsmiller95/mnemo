@@ -1,3 +1,6 @@
 TODO:
+ - Implement web interface for editing the data.
+
+WHISH LIST:
  - Log session response summaries.
  - Prettyprint average interval (per page or per user) in reports.
