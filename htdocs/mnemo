@@ -330,6 +330,10 @@ sub questionPage() {
     my ($sessionDuration) = &prettyDuration(time() - $parameters{'session'});
     my ($interval) = &prettyDuration($item{'interval'});
     my ($widthTerm) = &userWidthTerm;
+    my ($editButton) = '';
+    if (0 != $user{'showEdit'}) {
+        $editButton = '<button name="action" value="edit" type="submit">Edit mode</button>';
+    }
 
     print <<"EndOfQuestionPage";
 HTTP/1.0 200 OK
@@ -348,7 +352,7 @@ $session{'pagePath'}
 </table>
 Interval for this item: $interval<br />
 Session: $sessionDuration<br />
-<button name="action" value="edit" type="submit">Edit mode</button>
+$editButton
 </form>
 </body>
 </html>
@@ -548,7 +552,8 @@ sub writeLinesToFile() {
 sub readUserFile() {
     ($user{'password'},
      $user{'sessionDuration'},
-     $user{'width'}
+     $user{'width'},
+     $user{'showEdit'}
     ) = &readLinesFromFile("$opsDir/users/$parameters{'user'}");
 }
 
@@ -557,9 +562,13 @@ sub writeUserFile() {
                       '# User file line fields are:',
                       '#     password',
                       '#     sessionDuration (seconds, zero invokes default)',
+                      '#     width during quiz mode (pixels)',
+                      '#     show edit button (0=="NO")',
                       '#',
                       $user{'password'},
-                      $user{'sessionDuration'}
+                      $user{'sessionDuration'},
+                      $user{'width'},
+                      $user{'showEdit'}
                      );
 }
 
