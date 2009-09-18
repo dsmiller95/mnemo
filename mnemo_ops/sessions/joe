@@ -3,8 +3,16 @@
 #     pagePath
 #     itemUuid
 #     showPage (question, answer, edit)
+#     number of 0 responses
+#     number of 1 responses
+#     number of 2 responses
+#     number of 3 responses
 #
-1253216675
-Arithmetic/02_Subtraction
-ed939f57-c264-4324-a8c4-9630744bd7bd
-question
+1253270326
+Arithmetic/03_Multiplication
+eaa9a8cd-bfbc-42cb-bf37-430ebe3922fa
+answer
+0
+0
+0
+99
