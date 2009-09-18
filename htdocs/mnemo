@@ -97,9 +97,24 @@ sub main() {
     }
 
     if ($session{'showPage'} eq 'edit') {
-        &editPage;
+        if ($parameters{'action'} eq 'quit') {
+            %item = ();
+            $session{'itemUuid'} = '';
+            $session{'showPage'} = 'question';
+            &writeSessionFile;
+            &questionPage;
+        } elsif ($parameters{'action'} eq 'save') {
+            &saveItem;
+            &editPage('(saved)');
+        } else {
+            &editPage;
+        }
     } elsif ($session{'showPage'} eq 'answer') {
-        if ($parameters{'response'} =~ /^[0123]$/) {
+        if ($parameters{'action'} eq 'edit') {
+            $session{'showPage'} = 'edit';
+            &writeSessionFile;
+            &editPage
+        } elsif ($parameters{'response'} =~ /^[0123]$/) {
             &recordResponse;
             %item = ();
             $session{'itemUuid'} = '';
@@ -111,7 +126,11 @@ sub main() {
         }
     } else {
         # assuming ($session{'showPage'} eq 'question')
-        if ($parameters{'action'} eq 'showAnswer') {
+        if ($parameters{'action'} eq 'edit') {
+            $session{'showPage'} = 'edit';
+            &writeSessionFile;
+            &editPage
+        } elsif ($parameters{'action'} eq 'showAnswer') {
             $session{'showPage'} = 'answer';
             &writeSessionFile;
             &answerPage;
@@ -327,9 +346,10 @@ $session{'pagePath'}
 <tr><td>$item{'question'}</td></tr>
 <tr><td><button name="action" value="showAnswer" type="submit">Show answer</button></td></tr>
 </table>
-</form>
 Interval for this item: $interval<br />
-Session: $sessionDuration
+Session: $sessionDuration<br />
+<button name="action" value="edit" type="submit">Edit mode</button>
+</form>
 </body>
 </html>
 EndOfQuestionPage
@@ -397,21 +417,22 @@ $session{'pagePath'}
 <button type="submit" name="response" value="0">Huh?</button>
 <button type="submit" name="response" value="1">No</button>
 <button type="submit" name="response" value="2">Slow</button>
-<button type="submit" name="response" value="3">Yes!</button>
-</form>
+<button type="submit" name="response" value="3">Yes!</button><br />
 Interval for this item: $interval<br />
-Session: $sessionDuration
+Session: $sessionDuration<br />
+<button name="action" value="edit" type="submit">Edit mode</button>
+</form>
 </body>
 </html>
 EndOfAnswerPage
 }
 
-# If in edit mode:
+# TODO: if in edit mode:
 #   - Request "New Page" dialog.
 #   - Request "Item Search" dialog. (Implement later?)
 #   - Requiring page and item:
 #       - Add the reverse of this item.
-#       - Change this item.
+#       - Save this item.
 #       - Delete this item.
 #   - Requiring at least a page:
 #       - Go to named item.
@@ -422,7 +443,18 @@ EndOfAnswerPage
 #   - Go to named page.
 #   - DEFAULT: Switch to learn mode, redirect to ShowNext this page.
 sub editPage() {
+    my ($msg) = @_;
+    my (@k);
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        return;
+    }
+
     print <<"EndOfEditPage";
+
 HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
@@ -432,19 +464,43 @@ Content-type: text/html; charset=utf-8
 <form name="mnemo" action="mnemo" method="get">
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
+<input type="hidden" name="itemUuid" value="$item{'uuid'}">
+$session{'pagePath'} $msg
 <table border=1 cellpadding=5>
-<tr><th>Question</th><td><input type="text" name="question" value="$item{'question'}" length="40"></td></tr>
-<tr><th>Answer</th><td><input type="text" name="answer" value="$item{'answer'}" length="40"></td></tr>
+<tr><th>QID</th><td>$item{'uuid'}</td></tr>
+<tr><th>Question</th><td><input type="text" name="question" value="$item{'question'}"></td></tr>
+<tr><th>Answer</th><td><input type="text" name="answer" value="$item{'answer'}"></td></tr>
 <tr><th>Due Time</th><td><input type="text" name="dueTime" value="$item{'dueTime'}"></td></tr>
 <tr><th>Interval</th><td><input type="text" name="interval" value="$item{'interval'}"></td></tr>
 </table>
 <button type="submit" name="action" value="save">Save</button>
-<button type="reset">Reset</button>
+<button type="submit" name="action" value="quit">Quit</button>
 <br />
 </form>
 </body>
 </html>
 EndOfEditPage
+}
+
+sub saveItem() {
+    my (@k);
+    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
+        &errorPage("UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
+        return;
+    }
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        return;
+    }
+    $item{'question'} = $parameters{'question'};
+    $item{'answer'} = $parameters{'answer'};
+    $item{'dueTime'} = $parameters{'dueTime'};
+    $item{'interval'} = $parameters{'interval'};
+    $page{$session{'itemUuid'}} = {%item};
+    &writePageFile;
 }
 
 sub isValidPagePath() {
@@ -687,12 +743,15 @@ sub finishedPage() {
         $session{'response_1'} +
         $session{'response_2'} +
         $session{'response_3'});
-    my (@percents) = ();
-    foreach my $r ( $session{'response_0'},
-                    $session{'response_1'},
-                    $session{'response_2'},
-                    $session{'response_3'} ) {
-        push(@percents, int((100.0 * $r) / $total));
+    my (@percents) = (0, 0, 0, 0);
+    if ($total != 0) {
+        (@percents) = ();
+        foreach my $r ( $session{'response_0'},
+                        $session{'response_1'},
+                        $session{'response_2'},
+                        $session{'response_3'} ) {
+            push(@percents, int((100.0 * $r) / $total));
+        }
     }
 
     print <<"EndOfFinishedPage";
