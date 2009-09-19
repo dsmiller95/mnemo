@@ -515,6 +515,11 @@ sub saveItem() {
 
     $page{$session{'itemUuid'}} = {%item};
     &writePageFile;
+
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    &writeSessionFile;
+    $parameters{'session'} = $session{'sessionID'};
 }
 
 # Create a new item from swapped question and answer of the current item,
@@ -556,6 +561,9 @@ sub flipItem() {
     &writePageFile;
 
     $session{'itemUuid'} = $newItem{'uuid'};
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    $parameters{'session'} = $session{'sessionID'};
     &writeSessionFile;
 
     %item = %newItem;
