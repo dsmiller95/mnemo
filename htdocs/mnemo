@@ -112,6 +112,9 @@ sub main() {
         } elsif ($parameters{'action'} eq 'add') {
             &addItem;
             &editPage('(item added)');
+        } elsif ($parameters{'action'} eq 'delete') {
+            &deleteItem;
+            &editPage('(item deleted)');
         } else {
             &editPage;
         }
@@ -487,6 +490,7 @@ $session{'pagePath'} $msg
 <button type="submit" name="action" value="quit">Quit</button>
 <button type="submit" name="action" value="flip">Insert flip of this item</button>
 <button type="submit" name="action" value="add">Add new item</button>
+<button type="submit" name="action" value="delete">Delete</button>
 </form>
 </body>
 </html>
@@ -571,6 +575,66 @@ sub flipItem() {
     &writeSessionFile;
 
     %item = %newItem;
+    $parameters{'itemUuid'} = $item{'uuid'};
+    $parameters{'question'} = $item{'question'};
+    $parameters{'answer'} = $item{'answer'};
+    $parameters{'dueTime'} = $item{'dueTime'};
+    $parameters{'interval'} = $item{'interval'};
+}
+
+# Delete the current item and point the edit interface at the next
+# item if there is one, or the last item if there isn't.
+# If there are no items left, add one!
+sub deleteItem() {
+    my (@k);
+    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
+        &errorPage("UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
+        return;
+    }
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        return;
+    }
+
+    my (@newPageUuids) = ();
+    my ($nextItemUuid) = ();
+    while ($#pageUuids >= 0) {
+        push(@newPageUuids, shift(@pageUuids));
+        if ($newPageUuids[$#newPageUuids] eq $item{'uuid'}) {
+            last;
+        }
+    }
+    if ($newPageUuids[$#newPageUuids] eq $item{'uuid'}) {
+        pop(@newPageUuids);
+        if ($#pageUuids >= 0) {
+            $nextItemUuid = $pageUuids[0];
+        } elsif ($#newPageUuids >= 0) {
+            $nextItemUuid = $newPageUuids[$#newPageUuids];
+        }
+    }
+    while ($#pageUuids >= 0) {
+        push(@newPageUuids, shift(@pageUuids));
+    }
+
+    @pageUuids = @newPageUuids;
+    &writePageFile;
+
+    if (length($nextItemUuid) == 0) {
+        &addItem;
+        return;
+    }
+
+    %item = %{$page{$nextItemUuid}};
+
+    $session{'itemUuid'} = $item{'uuid'};
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    $parameters{'session'} = $session{'sessionID'};
+    &writeSessionFile;
+
     $parameters{'itemUuid'} = $item{'uuid'};
     $parameters{'question'} = $item{'question'};
     $parameters{'answer'} = $item{'answer'};
