@@ -1,6 +1,23 @@
 TODO:
  - Implement web interface for editing the data.
+   - next item
+   - previous item
+   - next page
+   - previous page
+   - rename (move) page
+   - new/delete page
+ - Add user profile editing pages.
+   - Add password change page and link from login page.
+   - Add page to edit user profile (timout, width, showEdit, (email?))
+ - Add remote user admin pages.
+   - Add email to user profile.
+   - Implement a password-reset-code URL which can be e-mailed to the user.
+   - Add request password reset page and link from login page.
+   - Add a page to register as a new user, reset code mailed on approval.
+     (Also add code to getNextDueItem to create a dummy page and item
+      and jump directly to edit mode if there's no data dir for the user.)
+   - Change passwords to salted hashes so they're not stored in the clear.
 
-WHISH LIST:
+WISH LIST:
  - Log session response summaries.
  - Prettyprint average interval (per page or per user) in reports.
