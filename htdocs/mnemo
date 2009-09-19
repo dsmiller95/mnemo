@@ -106,6 +106,9 @@ sub main() {
         } elsif ($parameters{'action'} eq 'save') {
             &saveItem;
             &editPage('(saved)');
+        } elsif ($parameters{'action'} eq 'flip') {
+            &flipItem;
+            &editPage('(flipped item inserted)');
         } else {
             &editPage;
         }
@@ -479,7 +482,7 @@ $session{'pagePath'} $msg
 </table>
 <button type="submit" name="action" value="save">Save</button>
 <button type="submit" name="action" value="quit">Quit</button>
-<br />
+<button type="submit" name="action" value="flip">Insert flip of this item</button>
 </form>
 </body>
 </html>
@@ -512,6 +515,55 @@ sub saveItem() {
 
     $page{$session{'itemUuid'}} = {%item};
     &writePageFile;
+}
+
+# Create a new item from swapped question and answer of the current item,
+# and insert it immediately after the current item.
+sub flipItem() {
+    my (@k);
+    my (%newItem);
+    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
+        &errorPage("UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
+        return;
+    }
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        return;
+    }
+    $newItem{'uuid'} = `uuidgen`; chomp($newItem{'uuid'});
+    $newItem{'question'} = $item{'answer'};
+    $newItem{'answer'} = $item{'question'};
+    $newItem{'dueTime'} = time;
+    $newItem{'interval'} = $defaultInterval;
+
+    my (@newPageUuids) = ();
+    while ($#pageUuids >= 0) {
+        push(@newPageUuids, shift(@pageUuids));
+        if ($newPageUuids[$#newPageUuids] eq $item{'uuid'}) {
+            last;
+        }
+    }
+    push(@newPageUuids, $newItem{'uuid'});
+    while ($#pageUuids >= 0) {
+        push(@newPageUuids, shift(@pageUuids));
+    }
+
+    $page{$newItem{'uuid'}} = {%newItem};
+    @pageUuids = @newPageUuids;
+    &writePageFile;
+
+    $session{'itemUuid'} = $newItem{'uuid'};
+    &writeSessionFile;
+
+    %item = %newItem;
+    $parameters{'itemUuid'} = $item{'uuid'};
+    $parameters{'question'} = $item{'question'};
+    $parameters{'answer'} = $item{'answer'};
+    $parameters{'dueTime'} = $item{'dueTime'};
+    $parameters{'interval'} = $item{'interval'};
 }
 
 sub isValidPagePath() {
@@ -810,6 +862,11 @@ sub debugPage() {
     print "session:\n";
     foreach my $k (sort(keys(%session))) {
         print "    '$k': '$session{$k}'\n";
+    }
+
+    print "pageUuids:\n";
+    foreach my $k (@pageUuids) {
+        print "    '$k'\n";
     }
 
     print "page:\n";
