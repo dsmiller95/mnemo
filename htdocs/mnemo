@@ -109,6 +109,9 @@ sub main() {
         } elsif ($parameters{'action'} eq 'flip') {
             &flipItem;
             &editPage('(flipped item inserted)');
+        } elsif ($parameters{'action'} eq 'add') {
+            &addItem;
+            &editPage('(item added)');
         } else {
             &editPage;
         }
@@ -483,6 +486,7 @@ $session{'pagePath'} $msg
 <button type="submit" name="action" value="save">Save</button>
 <button type="submit" name="action" value="quit">Quit</button>
 <button type="submit" name="action" value="flip">Insert flip of this item</button>
+<button type="submit" name="action" value="add">Add new item</button>
 </form>
 </body>
 </html>
@@ -558,6 +562,38 @@ sub flipItem() {
 
     $page{$newItem{'uuid'}} = {%newItem};
     @pageUuids = @newPageUuids;
+    &writePageFile;
+
+    $session{'itemUuid'} = $newItem{'uuid'};
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    $parameters{'session'} = $session{'sessionID'};
+    &writeSessionFile;
+
+    %item = %newItem;
+    $parameters{'itemUuid'} = $item{'uuid'};
+    $parameters{'question'} = $item{'question'};
+    $parameters{'answer'} = $item{'answer'};
+    $parameters{'dueTime'} = $item{'dueTime'};
+    $parameters{'interval'} = $item{'interval'};
+}
+
+# Create a new blank item and append it to the page.
+sub addItem() {
+    my (%newItem);
+    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
+        &errorPage("UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
+        return;
+    }
+    &readPageFile;
+    $newItem{'uuid'} = `uuidgen`; chomp($newItem{'uuid'});
+    $newItem{'question'} = 'Edit this question.';
+    $newItem{'answer'} = 'Edit this answer.';
+    $newItem{'dueTime'} = 0;
+    $newItem{'interval'} = $defaultInterval;
+
+    push(@pageUuids, $newItem{'uuid'});
+    $page{$newItem{'uuid'}} = {%newItem};
     &writePageFile;
 
     $session{'itemUuid'} = $newItem{'uuid'};
