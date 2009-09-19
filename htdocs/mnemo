@@ -17,10 +17,10 @@
 #   - answer [required]
 #   - interval (seconds)
 #   - dueTime (time_t)
-# Fields are delimited by the ampersand "&" character.
-# Ampersands in the question and answer must be html encoded (&amp;).
-# Question and answer are to be in UTF-8.
-# If an item doesn't have an interval, it's set to a default when read.
+# Fields are delimited by the backslash character, '\'.
+# Backslashes in the data would have to be HTML coded as "&92;".
+# Question and answer are to be in text/HTML format using UTF-8.
+# If an item doesn't have an interval, that's set to a default when read.
 # If the item doesn't have a dueTime, it is ignored until no other
 #   items on the page are due.
 
@@ -501,8 +501,15 @@ sub saveItem() {
     }
     $item{'question'} = $parameters{'question'};
     $item{'answer'} = $parameters{'answer'};
-    $item{'dueTime'} = $parameters{'dueTime'};
-    $item{'interval'} = $parameters{'interval'};
+    $item{'dueTime'} = 0 + $parameters{'dueTime'};
+    $item{'interval'} = 0 + $parameters{'interval'};
+
+    $item{'question'} =~ s/\r?\n/<br \/>/mg; # HTML'ize newlines
+    $item{'answer'} =~ s/\r?\n/<br \/>/mg; # HTML'ize newlines
+
+    $item{'question'} =~ s/\\/&92;/g; # HTML'ize backslashes
+    $item{'answer'} =~ s/\\/&92;/g; # HTML'ize backslashes
+
     $page{$session{'itemUuid'}} = {%item};
     &writePageFile;
 }
