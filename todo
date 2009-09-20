@@ -1,11 +1,10 @@
 TODO:
  - Implement web interface for editing the data.
-   - next item
-   - previous item
    - next page
    - previous page
    - rename (move) page
    - new/delete page
+ - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing pages.
    - Add password change page and link from login page.
    - Add page to edit user profile (timout, width, showEdit, (email?))
@@ -16,8 +15,6 @@ TODO:
    - Add a page to register as a new user, reset code mailed on approval.
      (Also add code to getNextDueItem to create a dummy page and item
       and jump directly to edit mode if there's no data dir for the user.)
-   - Change passwords to salted hashes so they're not stored in the clear.
 
 WISH LIST:
- - Log session response summaries.
- - Prettyprint average interval (per page or per user) in reports.
+ - Log session response summaries. (Rolling log?)
