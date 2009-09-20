@@ -514,35 +514,35 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <tr><th>Due Time</th><td><input type="text" name="dueTime" value="$item{'dueTime'}"></td></tr>
 <tr><th>Interval</th><td><input type="text" name="interval" value="$item{'interval'}"></td></tr>
 </table>
-<table border="0" cellpadding="0">
-<tr>
-<td><button type="submit" name="action" value="save">Save</button></td>
-<td><button type="submit" name="action" value="flip">Flip and insert</button></td>
-<td><button type="submit" name="action" value="add">Add new item</button></td>
-<td><button type="submit" name="action" value="delete">Delete</button><br /></td>
-<td><button type="submit" name="action" value="quit">Quit</button></td>
-</tr>
-</table>
-<table border="0" cellpadding="0">
-<tr>
-<td><button type="submit" name="action" value="prevItem">Previous item</button></td>
-<td><button type="submit" name="action" value="nextItem">Next item</button></td>
-<!-- <td><button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"></td> -->
-</tr>
-</table>
-<table border="0" cellpadding="0">
-<tr>
-<td><button type="submit" name="action" value="prevPage">Previous page</button></td>
-<td><button type="submit" name="action" value="nextPage">Next page</button></td>
-<!-- <td><button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath"></td> -->
-</tr>
-</table>
-<table border="0" cellpadding="0">
-<tr>
-<td><button type="submit" name="action" value="deletePage">Delete this page</button><br /></td>
-<td><button type="submit" name="action" value="addPage">Add new page:</button><input type="text" name="addPagePath"></td>
-</tr>
-</table>
+<nobr>
+<button type="submit" name="action" value="save">Save</button>
+<button type="submit" name="action" value="flip">Flip and insert</button>
+<button type="submit" name="action" value="add">Add new item</button>
+<button type="submit" name="action" value="delete">Delete</button>
+<button type="submit" name="action" value="quit">Quit</button>
+</nobr>
+<br />
+<nobr>
+<button type="submit" name="action" value="prevItem">Previous item</button>
+<button type="submit" name="action" value="nextItem">Next item</button>
+<!-- <button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"> -->
+</nobr>
+<br />
+<nobr>
+<button type="submit" name="action" value="prevPage">Previous page</button>
+<button type="submit" name="action" value="nextPage">Next page</button>
+<!-- <button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath"> -->
+</nobr>
+<br />
+<nobr>
+<button type="submit" name="action" value="deletePage">Delete this page</button>
+<button type="submit" name="action" value="addPage">Add new page:</button>
+<input type="text" name="addPagePath">
+</nobr>
+<br />
+<nobr>
+<button type="submit" name="action" value="movePage">Rename this page:</button><input type="text" name="movePagePath">
+</nobr>
 </form>
 </body>
 </html>
