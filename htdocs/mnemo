@@ -123,6 +123,12 @@ sub main() {
         } elsif ($parameters{'action'} eq 'prevItem') {
             &gotoPrevNextItem('prev');
             &editPage;
+        } elsif ($parameters{'action'} eq 'nextPage') {
+            &gotoPrevNextPage('next');
+            &editPage;
+        } elsif ($parameters{'action'} eq 'prevPage') {
+            &gotoPrevNextPage('prev');
+            &editPage;
         } else {
             &editPage;
         }
@@ -195,6 +201,17 @@ sub writePageFile() {
                         $tmp{'dueTime'}), "\n";
     }
     close(PAGE);
+}
+
+sub getAllPagePaths() {
+    my ($d) = "$opsDir/data/$parameters{'user'}/";
+    my (@paths) = `find "$d" -type f -name '*.mnemo' | sort`;
+    chomp(@paths);
+    my ($p);
+    foreach $p (@paths) {
+        $p = substr(substr($p, length($d)), 0, -6);
+    }
+    return @paths;
 }
 
 sub getNextPage() {
@@ -474,7 +491,7 @@ sub editPage() {
         return;
     }
 
-    my ($itemIdx) = &findStringIn($session{'itemUuid'}, @pageUuids) + 1;
+    my ($itemIdx) = &findStringInList($session{'itemUuid'}, @pageUuids) + 1;
     my ($itemCount) = $#pageUuids + 1;
 
     print <<"EndOfEditPage";
@@ -510,14 +527,14 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <tr>
 <td><button type="submit" name="action" value="prevItem">Previous item</button></td>
 <td><button type="submit" name="action" value="nextItem">Next item</button></td>
-<td><button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"></td>
+<!-- <td><button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"></td> -->
 </tr>
 </table>
 <table border="0" cellpadding="0">
 <tr>
 <td><button type="submit" name="action" value="prevPage">Previous page</button></td>
 <td><button type="submit" name="action" value="nextPage">Next page</button></td>
-<td><button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath"></td>
+<!-- <td><button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath"></td> -->
 </tr>
 </table>
 <table border="0" cellpadding="0">
@@ -574,7 +591,7 @@ sub gotoPrevNextItem() {
     }
     &readPageFile;
 
-    my ($idx) = &findStringIn($session{'itemUuid'}, @pageUuids);
+    my ($idx) = &findStringInList($session{'itemUuid'}, @pageUuids);
 
     if ($idx < 0) {
         &errorPage("gotoPrevNextItem: idx=$idx Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
@@ -607,7 +624,46 @@ sub gotoPrevNextItem() {
     $parameters{'answer'} = $item{'answer'};
     $parameters{'dueTime'} = $item{'dueTime'};
     $parameters{'interval'} = $item{'interval'};
-$DBG = 1;
+}
+
+sub gotoPrevNextPage() {
+    my ($choice) = @_;
+
+    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
+        &errorPage("gotoPrevNextPage: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
+        return;
+    }
+
+    my (@pagePaths) = &getAllPagePaths;
+    my ($idx) = &findStringInList($session{'pagePath'}, @pagePaths);
+
+    if ($choice eq 'prev') {
+        if ($idx > 0) {
+            $idx--; # previous item
+            # else just stay on the first one
+        }
+    } else {
+        if ($idx < $#pagePaths) {
+            $idx++; # next item
+            # else just stay on the last one
+        }
+    }
+
+    $session{'pagePath'} = $pagePaths[$idx];
+    &readPageFile;
+    $session{'itemUuid'} = $pageUuids[0];
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    $parameters{'session'} = $session{'sessionID'};
+    &writeSessionFile;
+
+    %item = %{$page{$session{'itemUuid'}}};
+
+    $parameters{'itemUuid'} = $item{'uuid'};
+    $parameters{'question'} = $item{'question'};
+    $parameters{'answer'} = $item{'answer'};
+    $parameters{'dueTime'} = $item{'dueTime'};
+    $parameters{'interval'} = $item{'interval'};
 }
 
 # Create a new item from swapped question and answer of the current item,
@@ -1134,7 +1190,7 @@ sub uuidgen() {
     return($uuid);
 }
 
-sub findStringIn() {
+sub findStringInList() {
     my ($expr, @list) = @_;
     my ($idx) = -1; # this is the not-found value
     my ($pos);

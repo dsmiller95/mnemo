@@ -1,12 +1,9 @@
 TODO:
  - Implement web interface for editing the data.
-   - goto item by index number
-   - goto page by name
-   - goto previous page
-   - goto next page
    - new page (auto-mkdir)
    - delete page (purge empty dirs?)
    - rename (move) page
+ - Add "Dump" button, to download a *.ZIP file of all data for this user.
  - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing pages.
    - Add password change page and link from login page.
@@ -18,6 +15,9 @@ TODO:
    - Add a page to register as a new user, reset code mailed on approval.
      (Also add code to getNextDueItem to create a dummy page and item
       and jump directly to edit mode if there's no data dir for the user.)
+ - Add jumping navigation to edit interface.
+   - goto item by index number
+   - goto page by name
 
 WISH LIST:
  - Log session response summaries. (Rolling log?)
