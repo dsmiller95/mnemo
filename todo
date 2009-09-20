@@ -1,9 +1,12 @@
 TODO:
  - Implement web interface for editing the data.
-   - next page
-   - previous page
+   - goto item by index number
+   - goto page by name
+   - goto previous page
+   - goto next page
+   - new page (auto-mkdir)
+   - delete page (purge empty dirs?)
    - rename (move) page
-   - new/delete page
  - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing pages.
    - Add password change page and link from login page.

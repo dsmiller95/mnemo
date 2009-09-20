@@ -489,21 +489,43 @@ Content-type: text/html; charset=utf-8
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 <input type="hidden" name="itemUuid" value="$item{'uuid'}">
-$session{'pagePath'} item $itemIdx of $itemCount $msg
-<table border=1 cellpadding=5>
+Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
+<table border="1" cellpadding="5">
 <tr><th>QID</th><td>$item{'uuid'}</td></tr>
 <tr><th>Question</th><td><input type="text" name="question" value="$item{'question'}"></td></tr>
 <tr><th>Answer</th><td><input type="text" name="answer" value="$item{'answer'}"></td></tr>
 <tr><th>Due Time</th><td><input type="text" name="dueTime" value="$item{'dueTime'}"></td></tr>
 <tr><th>Interval</th><td><input type="text" name="interval" value="$item{'interval'}"></td></tr>
 </table>
-<button type="submit" name="action" value="save">Save</button>
-<button type="submit" name="action" value="quit">Quit</button>
-<button type="submit" name="action" value="flip">Insert flip of this item</button>
-<button type="submit" name="action" value="add">Add new item</button>
-<button type="submit" name="action" value="delete">Delete</button><br />
-<button type="submit" name="action" value="prevItem">Previous item</button>
-<button type="submit" name="action" value="nextItem">Next item</button>
+<table border="0" cellpadding="0">
+<tr>
+<td><button type="submit" name="action" value="save">Save</button></td>
+<td><button type="submit" name="action" value="flip">Flip and insert</button></td>
+<td><button type="submit" name="action" value="add">Add new item</button></td>
+<td><button type="submit" name="action" value="delete">Delete</button><br /></td>
+<td><button type="submit" name="action" value="quit">Quit</button></td>
+</tr>
+</table>
+<table border="0" cellpadding="0">
+<tr>
+<td><button type="submit" name="action" value="prevItem">Previous item</button></td>
+<td><button type="submit" name="action" value="nextItem">Next item</button></td>
+<td><button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"></td>
+</tr>
+</table>
+<table border="0" cellpadding="0">
+<tr>
+<td><button type="submit" name="action" value="prevPage">Previous page</button></td>
+<td><button type="submit" name="action" value="nextPage">Next page</button></td>
+<td><button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath"></td>
+</tr>
+</table>
+<table border="0" cellpadding="0">
+<tr>
+<td><button type="submit" name="action" value="deletePage">Delete this page</button><br /></td>
+<td><button type="submit" name="action" value="addPage">Add new page:</button><input type="text" name="addPagePath"></td>
+</tr>
+</table>
 </form>
 </body>
 </html>
