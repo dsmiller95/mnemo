@@ -24,8 +24,6 @@
 # If the item doesn't have a dueTime, it is ignored until no other
 #   items on the page are due.
 
-$| = 1; # immediately flush all writes
-
 use Encode qw(encode decode);
 
 $minimumSessionDuration = 5 * 60; # prevents user from shutting self out.
@@ -131,7 +129,13 @@ sub main() {
             &editPage;
         } elsif ($parameters{'action'} eq 'deletePage') {
             &deletePage;
-            &editPage;
+            # (editPage is called from inside deletePage)
+        } elsif ($parameters{'action'} eq 'addPage') {
+            &addPage;
+            # (editPage is called from inside addPage)
+        } elsif ($parameters{'action'} eq 'movePage') {
+            &movePage;
+            # (editPage is called from inside movePage)
         } else {
             &editPage;
         }
@@ -208,13 +212,13 @@ sub writePageFile() {
 
 sub getAllPagePaths() {
     my ($d) = "$opsDir/data/$parameters{'user'}/";
-    my (@paths) = `find "$d" -type f -name '*.mnemo' | sort`;
+    my (@paths) = `find "$d" -type f -name '*.mnemo'`;
     chomp(@paths);
     my ($p);
     foreach $p (@paths) {
         $p = substr(substr($p, length($d)), 0, -6);
     }
-    return @paths;
+    return sort(@paths);
 }
 
 sub getNextPage() {
@@ -666,20 +670,23 @@ sub gotoPrevNextPage() {
 
 sub deletePage() {
     my (@pagePaths) = &getAllPagePaths;
-    my ($idx) = &findStringInList($session{'pagePath'}, @pagePaths);
+    my ($pageToDelete) = $session{'pagePath'};
+    my ($idx) = &findStringInList($pageToDelete, @pagePaths);
 
     if ($idx < 0) {
         &errorPage("deletePage: Can't delete unfound page, '$session{'pagePath'}'.");
         exit(1);
     }
     if ($#pagePaths < 1) {
-        &errorPage("deletePage: Can't delete the only page.");
-        exit(1);
+        &editPage("(Can't delete the only page.)");
+        return;
     }
 
     unlink("$opsDir/data/$parameters{'user'}/$pagePaths[$idx].mnemo");
+    &purgeEmptyFolders("$opsDir/data/$parameters{'user'}");
+    @pagePaths = &getAllPagePaths;
 
-    if ($idx == $#pagePaths) {
+    if ($idx > $#pagePaths) {
         $idx--;
     }
 
@@ -698,6 +705,168 @@ sub deletePage() {
     $parameters{'answer'} = $item{'answer'};
     $parameters{'dueTime'} = $item{'dueTime'};
     $parameters{'interval'} = $item{'interval'};
+
+    &editPage("(Page '$pageToDelete' deleted.)");
+}
+
+sub isValidPath() {
+    my ($path) = @_;
+
+    if ($path =~ /^\w/) {
+        $path =~ s/\w|-|\.|\/|\ //mg;
+        if (length($path) == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+sub createNewPageFile() {
+    my ($path) = @_;
+    if (! &isValidPath($path)) {
+        return 0;
+    }
+    my (@components) = split(/\//, $path);
+    my ($file) = pop(@components) . '.mnemo';
+    my ($partPath) = "$opsDir/data/$parameters{'user'}";
+    while ($#components >= 0) {
+        $partPath .= ('/' . shift(@components));
+        if (! (-d $partPath)) {
+            if (! mkdir($partPath)) {
+                return 0;
+            }
+        }
+    }
+    open(NEWPAGE, ">$partPath/$file") || return 0;
+    print NEWPAGE &uuidgen . "\\?\\!\n";
+    close(NEWPAGE);
+    return 1;
+}
+
+sub addPage() {
+    my (@pagePaths) = &getAllPagePaths;
+    my ($pageToAdd) = $parameters{'addPagePath'};
+    my ($message) = '';
+    my ($idx) = &findStringInList($pageToAdd, @pagePaths);
+
+    if (! &isValidPath($pageToAdd)) {
+        $message = "('$pageToAdd' is not a valid path)";
+    } elsif ($idx >= 0) {
+        $session{'pagePath'} = $pageToAdd;
+        $message = '(exists)';
+    } else {
+        if (! &createNewPageFile($pageToAdd)) {
+            $message = "(could not create '$pageToAdd')";
+        } else {
+            $session{'pagePath'} = $pageToAdd;
+            $message = '(added)';
+        }
+    }
+
+    &readPageFile;
+    $session{'itemUuid'} = $pageUuids[0];
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    $parameters{'session'} = $session{'sessionID'};
+    &writeSessionFile;
+
+    %item = %{$page{$session{'itemUuid'}}};
+
+    $parameters{'itemUuid'} = $item{'uuid'};
+    $parameters{'question'} = $item{'question'};
+    $parameters{'answer'} = $item{'answer'};
+    $parameters{'dueTime'} = $item{'dueTime'};
+    $parameters{'interval'} = $item{'interval'};
+
+    &editPage($message);
+}
+
+sub purgeEmptyFolders() {
+    my ($path) = @_;
+
+    if (! (-d $path)) {
+        return;
+    }
+    if (! opendir($dh, "$path")) {
+        return; # fail silently
+    }
+    my (@names) = grep(/^[^\.]/, readdir($dh));
+    closedir($dh);
+
+    if ($#names < 0) {
+        rmdir($path);
+    } else {
+        foreach my $n (@names) {
+            &purgeEmptyFolders("$path/$n");
+        }
+    }
+}
+
+sub movePageFile() {
+    my ($fromPath, $toPath) = @_;
+    my ($line);
+    if (! &isValidPath($toPath)) {
+        return 0;
+    }
+    $fromPath = "$opsDir/data/$parameters{'user'}/$fromPath.mnemo";
+    $toPath = "$opsDir/data/$parameters{'user'}/$toPath.mnemo";
+    open(FROMPATH, "<$fromPath") || return 0;
+    open(TOPATH, ">$toPath") || return 0;
+    while ($line = <FROMPATH>) {
+        print TOPATH $line;
+    }
+    close(FROMPATH);
+    close(TOPATH);
+    unlink ("$fromPath");
+    &purgeEmptyFolders("$opsDir/data/$parameters{'user'}");
+    return 1;
+}
+
+sub movePage() {
+    my ($newPagePath) = $parameters{'movePagePath'};
+    my ($oldPagePath) = $session{'pagePath'};
+    my ($message) = '';
+
+    my (@pagePaths) = &getAllPagePaths;
+    my ($idx) = &findStringInList($oldPagePath, @pagePaths);
+    if ($idx < 0) {
+        &errorPage("movePage: Page '$oldPagePath' does not exist.");
+        exit(1);
+    }
+
+    $idx = &findStringInList($newPagePath, @pagePaths);
+
+    if (! &isValidPath($newPagePath)) {
+        $message = "('$newPagePath' is not a valid path)";
+    } elsif ($idx >= 0) {
+        $session{'pagePath'} = $newPagePath;
+        $message = '(exists)';
+    } else {
+        if (! &movePageFile($oldPagePath, $newPagePath)) {
+            $message = "(could not move to '$newPagePath')";
+        } else {
+            $session{'pagePath'} = $newPagePath;
+            $message = '(moved)';
+        }
+    }
+
+    &readPageFile;
+    $session{'itemUuid'} = $pageUuids[0];
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    $parameters{'session'} = $session{'sessionID'};
+    &writeSessionFile;
+
+    %item = %{$page{$session{'itemUuid'}}};
+
+    $parameters{'itemUuid'} = $item{'uuid'};
+    $parameters{'question'} = $item{'question'};
+    $parameters{'answer'} = $item{'answer'};
+    $parameters{'dueTime'} = $item{'dueTime'};
+    $parameters{'interval'} = $item{'interval'};
+
+    &editPage($message);
 }
 
 # Create a new item from swapped question and answer of the current item,
@@ -842,19 +1011,6 @@ sub addItem() {
     $parameters{'answer'} = $item{'answer'};
     $parameters{'dueTime'} = $item{'dueTime'};
     $parameters{'interval'} = $item{'interval'};
-}
-
-sub isValidPagePath() {
-    my ($path) = @_;
-
-    if (length($session{'pagePath'} == 0)) {
-        return 0;
-    }
-    if (! (-r $session{'pagePath'})) {
-        return 0; # What about "-w"?
-    }
-
-    return 1;
 }
 
 sub userSessionDuration() {

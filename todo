@@ -1,8 +1,4 @@
 TODO:
- - Implement web interface for editing the data.
-   - new page (auto-mkdir)
-   - delete page (purge empty dirs?)
-   - rename (move) page
  - Add "Dump" button, to download a *.ZIP file of all data for this user.
  - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing pages.
