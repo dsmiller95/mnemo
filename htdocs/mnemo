@@ -377,7 +377,7 @@ sub questionPage() {
     my ($widthTerm) = &userWidthTerm;
     my ($editButton) = '';
     if (0 != $user{'showEdit'}) {
-        $editButton = '<button name="action" value="edit" type="submit">Edit mode</button>';
+        $editButton = '<button name="action" value="edit" type="submit">Edit mode</button><br />';
     }
 
     print <<"EndOfQuestionPage";
@@ -398,6 +398,7 @@ $session{'pagePath'}
 Interval for this item: $interval<br />
 Session: $sessionDuration<br />
 $editButton
+<a target="_new" href="mnemo?user=$parameters{'user'}&report">Show a report for $parameters{'user'}.</a>
 </form>
 </body>
 </html>
@@ -448,6 +449,11 @@ sub answerPage() {
     my ($interval) = &prettyDuration($item{'interval'});
     my ($widthTerm) = &userWidthTerm;
 
+    my ($editButton) = '';
+    if (0 != $user{'showEdit'}) {
+        $editButton = '<button name="action" value="edit" type="submit">Edit mode</button><br />';
+    }
+
     print <<"EndOfAnswerPage";
 HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
@@ -469,7 +475,8 @@ $session{'pagePath'}
 <button type="submit" name="response" value="3">Yes!</button><br />
 Interval for this item: $interval<br />
 Session: $sessionDuration<br />
-<button name="action" value="edit" type="submit">Edit mode</button>
+$editButton
+<a target="_new" href="mnemo?user=$parameters{'user'}&report">Show a report for $parameters{'user'}.</a>
 </form>
 </body>
 </html>
@@ -539,6 +546,8 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <nobr>
 <button type="submit" name="action" value="movePage">Rename this page:</button><input type="text" name="movePagePath">
 </nobr>
+<br />
+<a target="_new" href="mnemo?user=$parameters{'user'}&report">Show a report for $parameters{'user'}.</a>
 <br />
 <nobr>
 Download:
