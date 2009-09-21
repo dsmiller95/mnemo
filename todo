@@ -1,19 +1,26 @@
+
 TODO:
- - Add "Dump" button, to download a *.ZIP file of all data for this user.
+ - Add "Download this page" and "Download all pages" links.
  - Change passwords to salted hashes so they're not stored in the clear.
- - Add user profile editing pages.
-   - Add password change page and link from login page.
-   - Add page to edit user profile (timout, width, showEdit, (email?))
- - Add remote user admin pages.
+ - Add user profile editing page for
+   - password
+   - timout
+   - width
+   - showEdit
+   - (email?)
+ - Add an interface to help users who can't log in.
    - Add email to user profile.
    - Implement a password-reset-code URL which can be e-mailed to the user.
    - Add request password reset page and link from login page.
    - Add a page to register as a new user, reset code mailed on approval.
      (Also add code to getNextDueItem to create a dummy page and item
       and jump directly to edit mode if there's no data dir for the user.)
+ - Add an "Upload" button for uploading data (in downloaded format).
  - Add jumping navigation to edit interface.
    - goto item by index number
    - goto page by name
 
-WISH LIST:
+MAYBE/WISH LIST:
  - Log session response summaries. (Rolling log?)
+ - Remove shell calls `find`, `uuidgen` (and `pwd`).
+
