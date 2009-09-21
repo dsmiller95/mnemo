@@ -129,6 +129,9 @@ sub main() {
         } elsif ($parameters{'action'} eq 'prevPage') {
             &gotoPrevNextPage('prev');
             &editPage;
+        } elsif ($parameters{'action'} eq 'deletePage') {
+            &deletePage;
+            &editPage;
         } else {
             &editPage;
         }
@@ -629,11 +632,6 @@ sub gotoPrevNextItem() {
 sub gotoPrevNextPage() {
     my ($choice) = @_;
 
-    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
-        &errorPage("gotoPrevNextPage: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
-        return;
-    }
-
     my (@pagePaths) = &getAllPagePaths;
     my ($idx) = &findStringInList($session{'pagePath'}, @pagePaths);
 
@@ -647,6 +645,42 @@ sub gotoPrevNextPage() {
             $idx++; # next item
             # else just stay on the last one
         }
+    }
+
+    $session{'pagePath'} = $pagePaths[$idx];
+    &readPageFile;
+    $session{'itemUuid'} = $pageUuids[0];
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    $parameters{'session'} = $session{'sessionID'};
+    &writeSessionFile;
+
+    %item = %{$page{$session{'itemUuid'}}};
+
+    $parameters{'itemUuid'} = $item{'uuid'};
+    $parameters{'question'} = $item{'question'};
+    $parameters{'answer'} = $item{'answer'};
+    $parameters{'dueTime'} = $item{'dueTime'};
+    $parameters{'interval'} = $item{'interval'};
+}
+
+sub deletePage() {
+    my (@pagePaths) = &getAllPagePaths;
+    my ($idx) = &findStringInList($session{'pagePath'}, @pagePaths);
+
+    if ($idx < 0) {
+        &errorPage("deletePage: Can't delete unfound page, '$session{'pagePath'}'.");
+        exit(1);
+    }
+    if ($#pagePaths < 1) {
+        &errorPage("deletePage: Can't delete the only page.");
+        exit(1);
+    }
+
+    unlink("$opsDir/data/$parameters{'user'}/$pagePaths[$idx].mnemo");
+
+    if ($idx == $#pagePaths) {
+        $idx--;
     }
 
     $session{'pagePath'} = $pagePaths[$idx];
