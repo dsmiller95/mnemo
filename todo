@@ -1,12 +1,14 @@
 
 TODO:
  - Add "Download this page" and "Download all pages" links.
+ - Internationalize the user interface.
  - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing page for
    - password
    - timout
    - width
    - showEdit
+   - language
    - (email?)
  - Add an interface to help users who can't log in.
    - Add email to user profile.
