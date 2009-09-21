@@ -526,7 +526,7 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <button type="submit" name="action" value="flip">Flip and insert</button>
 <button type="submit" name="action" value="add">Add new item</button>
 <button type="submit" name="action" value="delete">Delete</button>
-<button type="submit" name="action" value="quit">Quit</button>
+<button type="submit" name="action" value="quit">Quit editing</button>
 </nobr>
 <br />
 <nobr>
