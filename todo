@@ -1,6 +1,5 @@
 
 TODO:
- - Add "Download this page" and "Download all pages" links.
  - Internationalize the user interface.
  - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing page for
@@ -25,4 +24,5 @@ TODO:
 MAYBE/WISH LIST:
  - Log session response summaries. (Rolling log?)
  - Remove shell calls `find`, `uuidgen` (and `pwd`).
+ - Add a "Search" interface.
 

@@ -136,6 +136,10 @@ sub main() {
         } elsif ($parameters{'action'} eq 'movePage') {
             &movePage;
             # (editPage is called from inside movePage)
+        } elsif ($parameters{'action'} eq 'downloadPage') {
+            &downloadPages($session{'pagePath'});
+        } elsif ($parameters{'action'} eq 'downloadAll') {
+            &downloadPages(&getAllPagePaths);
         } else {
             &editPage;
         }
@@ -175,8 +179,7 @@ sub readPageFile() {
 
     %page = ();
     @pageUuids = (); # (this is for keeping them in order in the file)
-    open(PAGE, "<$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo") || return;
-    while ($line = <PAGE>) {
+    foreach $line (&readLinesFromFile("$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo")) {
         chomp($line);
         if (($uuid, $question, $answer, $interval, $dueTime) =
                 split(/\\/, $line)) {
@@ -201,6 +204,7 @@ sub readPageFile() {
 sub writePageFile() {
     my ($tmp);
     open(PAGE, ">$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo");
+    print PAGE "# $session{'pagePath'}\n";
     foreach my $uuid (@pageUuids) {
         %tmp = %{$page{$uuid}};
         print PAGE join('\\', $tmp{'uuid'}, $tmp{'question'},
@@ -472,21 +476,6 @@ Session: $sessionDuration<br />
 EndOfAnswerPage
 }
 
-# TODO: if in edit mode:
-#   - Request "New Page" dialog.
-#   - Request "Item Search" dialog. (Implement later?)
-#   - Requiring page and item:
-#       - Add the reverse of this item.
-#       - Save this item.
-#       - Delete this item.
-#   - Requiring at least a page:
-#       - Go to named item.
-#       - Go to last item in previous page.
-#       - Add a new item and then edit that item.
-#       - Move/Rename this page (and remove empty subdirectories).
-#       - Delete this page (and remove empty subdirectories).
-#   - Go to named page.
-#   - DEFAULT: Switch to learn mode, redirect to ShowNext this page.
 sub editPage() {
     my ($msg) = @_;
     my (@k);
@@ -549,6 +538,12 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <br />
 <nobr>
 <button type="submit" name="action" value="movePage">Rename this page:</button><input type="text" name="movePagePath">
+</nobr>
+<br />
+<nobr>
+Download:
+<a href="mnemo?user=$parameters{'user'}&session=$parameters{'session'}&action=downloadPage">(this page)</a>
+<a href="mnemo?user=$parameters{'user'}&session=$parameters{'session'}&action=downloadAll">(all pages)</a>
 </nobr>
 </form>
 </body>
@@ -803,6 +798,25 @@ sub purgeEmptyFolders() {
     }
 }
 
+sub downloadPages() {
+    my (@pagePaths) = @_;
+    my ($fileName);
+    if ($#pagePaths == 0) {
+        $fileName = $pagePaths[0] . '.mnemo';
+    } else {
+        $fileName = $parameters{'user'} . '.mnemo';
+    }
+    print "HTTP/1.0 200 OK\n" .
+          "Content-type: application/octet-stream; charset=utf-8\n" .
+          "Content-disposition: attachment; filename=$fileName\n\n";
+    my ($path);
+    foreach $path (@pagePaths) {
+        print "# $path\n";
+        print join("\n", &readLinesFromFile("$opsDir/data/$parameters{'user'}/$path.mnemo"));
+        print "\n\n";
+    }
+}
+
 sub movePageFile() {
     my ($fromPath, $toPath) = @_;
     my ($line);
@@ -1023,6 +1037,7 @@ sub userSessionDuration() {
     }
 }
 
+# This gets all lines EXCEPT those which have '#' as the first char.
 sub readLinesFromFile() {
     my ($path) = @_;
 
