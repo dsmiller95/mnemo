@@ -1,5 +1,6 @@
 
 TODO:
+ - Change forms to method="POST".
  - Internationalize the user interface.
  - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing page for
@@ -25,4 +26,7 @@ MAYBE/WISH LIST:
  - Log session response summaries. (Rolling log?)
  - Remove shell calls `find`, `uuidgen` (and `pwd`).
  - Add a "Search" interface.
+ - Implement a database backend, maybe SQLite.
+ - Allow users to add multimedia objects (pic, sound, video) to items.
+   (Look into those editor widgets used on various blogs.)
 
