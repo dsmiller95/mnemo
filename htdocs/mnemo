@@ -32,6 +32,11 @@ $defaultSessionDuration = 15 * 60; # Fifteen minutes.
 $minimumInterval = 60;
 $defaultInterval = 60;
 
+$maxPagePathFieldLength = 60;
+
+$qnaFieldRows = 3;
+$qnaFieldCols = 60;
+
 $opsDir = $ENV{'HOME'} . '/httpi_mnemo/mnemo_ops';
 
 $HOUR = 3600;
@@ -512,8 +517,8 @@ Content-type: text/html; charset=utf-8
 Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <table border="1" cellpadding="5">
 <tr><th>QID</th><td>$item{'uuid'}</td></tr>
-<tr><th>Question</th><td><input type="text" name="question" value="$item{'question'}"></td></tr>
-<tr><th>Answer</th><td><input type="text" name="answer" value="$item{'answer'}"></td></tr>
+<tr><th>Question</th><td><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
+<tr><th>Answer</th><td><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
 <tr><th>Due Time</th><td><input type="text" name="dueTime" value="$item{'dueTime'}"></td></tr>
 <tr><th>Interval</th><td><input type="text" name="interval" value="$item{'interval'}"></td></tr>
 </table>
@@ -534,17 +539,17 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <nobr>
 <button type="submit" name="action" value="prevPage">Previous page</button>
 <button type="submit" name="action" value="nextPage">Next page</button>
-<!-- <button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath"> -->
+<!-- <button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath" size="$maxPagePathFieldLength"> -->
 </nobr>
 <br />
 <nobr>
 <button type="submit" name="action" value="deletePage">Delete this page</button>
 <button type="submit" name="action" value="addPage">Add new page:</button>
-<input type="text" name="addPagePath">
+<input type="text" name="addPagePath" size="$maxPagePathFieldLength">
 </nobr>
 <br />
 <nobr>
-<button type="submit" name="action" value="movePage">Rename this page:</button><input type="text" name="movePagePath">
+<button type="submit" name="action" value="movePage">Rename this page:</button><input type="text" name="movePagePath" size="$maxPagePathFieldLength">
 </nobr>
 <br />
 <a target="_new" href="mnemo?user=$parameters{'user'}&report">Show a report for $parameters{'user'}.</a>
