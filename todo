@@ -1,6 +1,5 @@
 
 TODO:
- - Change forms to method="POST".
  - Internationalize the user interface.
  - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing page for

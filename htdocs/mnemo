@@ -51,7 +51,7 @@ exit 1;
 
 
 sub main() {
-    &parseArgs($ENV{'QUERY_STRING'});
+    &parseCgiParameters;
 
     # This lets me throw a debug page just by including a hidden
     # input in a form: <input type="hidden" name="debug" value="1">
@@ -392,7 +392,7 @@ Content-type: text/html; charset=utf-8
 <html>
 <head><title>Mnemo</title></head>
 <body bgcolor="#ffffff">
-<form name="mnemo" action="mnemo" method="get">
+<form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 $session{'pagePath'}
@@ -466,7 +466,7 @@ Content-type: text/html; charset=utf-8
 <html>
 <head><title>Mnemo</title></head>
 <body bgcolor="#ffffff">
-<form name="mnemo" action="mnemo" method="get">
+<form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 $session{'pagePath'}
@@ -510,7 +510,7 @@ Content-type: text/html; charset=utf-8
 <html>
 <head><title>Mnemo</title></head>
 <body bgcolor="#ffffff">
-<form name="mnemo" action="mnemo" method="get">
+<form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 <input type="hidden" name="itemUuid" value="$item{'uuid'}">
@@ -1257,7 +1257,7 @@ Content-type: text/html; charset=utf-8
 <html>
 <head><title>Mnemo</title></head>
 <body bgcolor="#ffffff">
-<form name="mnemo" action="mnemo" method="get">
+<form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 user <input type="text" name="user" value="$parameters{'user'}" /> <br />
 password <input type="password" name="password" /> <br />
 <input type="submit" value="Log in" />
@@ -1371,13 +1371,18 @@ EndOfDebugPage
     }
 }
 
-# Note that plusses and Unicode are only parsed from parameter values.
-sub parseArgs() {
-    my ($queryString) = @_;
-
+sub parseCgiParameters() {
+    my ($queryString) = ($ENV{'QUERY_STRING'});
     my ($parm, $name, $val);
 
     %parameters = ();
+
+    if ( (length($queryString) == 0) &&
+         ($ENV{'REQUEST_METHOD'} =~ /^post$/i) &&
+         ($ENV{'CONTENT_TYPE'} =~ /^application\/x-www-form-urlencoded$/) &&
+         (0 < $ENV{'CONTENT_LENGTH'}) ) {
+        read(STDIN, $queryString, $ENV{'CONTENT_LENGTH'});
+    }
 
     foreach my $parm (split(/\&/, $queryString)) {
         ($name, $val) = ($parm =~ /^([^=]+)=?(.*)$/);
