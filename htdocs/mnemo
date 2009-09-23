@@ -1171,8 +1171,11 @@ HTTP/1.0 200 ok
 Content-Type: text/plain
 
 EndOfReportPage
-    my ($d, $p, $u, $i, $done, $due, $new, $t, $t_done, $t_due, $t_new);
+    my ($d, $p, $u, $i, $t, $tt);
+    my ($done, $due, $new, $dueTomorrow);
+    my ($t_done, $t_due, $t_new, $t_dueTomorrow);
     $t = time;
+    $tt = $t + (24 * 3600); # Time Tomorrow
     foreach $u (sort(@users)) {
         $parameters{'user'} = $u;
         &readSessionFile;
@@ -1186,7 +1189,7 @@ EndOfReportPage
             print "\n";
         }
 
-        ($t_done, $t_due, $t_new) = (0, 0, 0);
+        ($t_done, $t_due, $t_new, $t_dueTomorrow) = (0, 0, 0, 0);
         $d = "$opsDir/data/$u/";
         foreach $p (`find "$d" -type f -name '*.mnemo' | sort`) {
             chomp($p);
@@ -1196,29 +1199,33 @@ EndOfReportPage
                 print "    '$p': ";
             }
             &readPageFile;
-            ($done, $due, $new) = (0, 0, 0);
+            ($done, $due, $new, $dueTomorrow) = (0, 0, 0, 0);
             foreach $i (values(%page)) {
                 if (0 != $$i{'dueTime'}) {
                     if ($$i{'dueTime'} > $t) {
                         $done++;
-                        $t_done++;
                     } else {
                         $due++;
-                        $t_due++;
+                    }
+                    if ($$i{'dueTime'} < $tt) {
+                        $dueTomorrow++
                     }
                 } else {
                     $new++;
-                    $t_new++;
                 }
             }
+            $t_done += $done;
+            $t_due += $due;
+            $t_new += $new;
+            $t_dueTomorrow += $dueTomorrow;
             if ($#users == 0) {
-                print "$new new, $due due, $done done.\n";
+                print "$new new, $due due, $done done ($dueTomorrow due tomorrow).\n";
             }
         }
         if ($#users == 0) {
             print '    TOTALS: ';
         }
-        print "$t_new new, $t_due due, $t_done done.\n";
+        print "$t_new new, $t_due due, $t_done done ($t_dueTomorrow due tomorrow).\n";
     }
 }
 
