@@ -20,6 +20,10 @@ TODO:
  - Add jumping navigation to edit interface.
    - goto item by index number
    - goto page by name
+ - Add the ability to append small (less than 24k) binary images to question
+   and answer as embedded base64 data.  This doesn't work in IE, but works
+   in Firefox and Chrome.  Test it on other platforms (like the DSi's Opera).
+   See the example "embedded_image.html" file in the sample_data dir.
 
 MAYBE/WISH LIST:
  - Log session response summaries. (Rolling log?)
