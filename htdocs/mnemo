@@ -113,7 +113,8 @@ sub main() {
             &editPage('(saved)');
         } elsif ($parameters{'action'} eq 'flip') {
             &flipItem;
-            &editPage('(flipped item inserted)');
+        } elsif ($parameters{'action'} eq 'duplicate') {
+            &duplicateItem;
         } elsif ($parameters{'action'} eq 'add') {
             &addItem;
             &editPage('(item added)');
@@ -528,13 +529,17 @@ sub editPage() {
     my ($itemCount) = $#pageUuids + 1;
     my ($intervalStr) = &prettyInterval($item{'interval'});
     my ($dueTimeStr);
+    my ($makeNewButton) = '<button type="submit" name="action" value="makeNew">Make new</button>';
+    my ($makeDueButton) = '<button type="submit" name="action" value="makeDueNow">Make due now</button>';
     if (0 == $item{'dueTime'}) {
         $dueTimeStr = '(new)';
+        $makeNewButton = '';
     } else {
         $dueTimeStr = &timeToStr($item{'dueTime'});
         my ($dueIn) = $item{'dueTime'} - time;
         if ($dueIn <= 0) {
             $dueTimeStr .= ' (due now)';
+            $makeDueButton = '';
         } else {
             $dueTimeStr .= (' (due in ' . &prettyInterval($dueIn) . ')');
         }
@@ -557,12 +562,13 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <tr><th>Question</th><td>$item{'question'}<br /><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
 <tr><th>Answer</th><td>$item{'answer'}<br /><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
 <tr><th>Interval</th><td>$intervalStr <button type="submit" name="action" value="resetInterval">Reset</button></td></tr>
-<tr><th>Due Time</th><td>$dueTimeStr <button type="submit" name="action" value="makeDueNow">Make due now</button> <button type="submit" name="action" value="makeNew">Make new</button></td></tr>
+<tr><th>Due Time</th><td>$dueTimeStr $makeDueButton $makeNewButton</td></tr>
 <tr><th>QID</th><td>$item{'uuid'}</td></tr>
 </table>
 <nobr>
 <button type="submit" name="action" value="save">Save</button>
-<button type="submit" name="action" value="flip">Flip and insert</button>
+<button type="submit" name="action" value="flip">Flip</button>
+<button type="submit" name="action" value="duplicate">Duplicate</button>
 <button type="submit" name="action" value="add">Add new item</button>
 <button type="submit" name="action" value="delete">Delete</button>
 <button type="submit" name="action" value="quit">Quit editing</button>
@@ -657,7 +663,7 @@ sub resetInterval() {
     &writeSessionFile;
     $parameters{'session'} = $session{'sessionID'};
 
-    &editPage;
+    &editPage('(interval reset)');
 }
 
 sub makeNew() {
@@ -684,7 +690,7 @@ sub makeNew() {
     &writeSessionFile;
     $parameters{'session'} = $session{'sessionID'};
 
-    &editPage;
+    &editPage('(made new)');
 }
 
 sub makeDueNow() {
@@ -710,7 +716,7 @@ sub makeDueNow() {
     &writeSessionFile;
     $parameters{'session'} = $session{'sessionID'};
 
-    &editPage;
+    &editPage('(made due now)');
 }
 
 sub gotoPrevNextItem() {
@@ -1012,9 +1018,43 @@ sub movePage() {
     &editPage($message);
 }
 
-# Create a new item from swapped question and answer of the current item,
-# and insert it immediately after the current item.
 sub flipItem() {
+    my (@k);
+    my ($tmp);
+    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
+        &errorPage("flipItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
+        return;
+    }
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("flipItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        return;
+    }
+    $tmp = $item{'question'};
+    $item{'question'} = $item{'answer'};
+    $item{'answer'} = $tmp;
+
+    $page{$item{'uuid'}} = {%item};
+    &writePageFile;
+
+    $session{'itemUuid'} = $item{'uuid'};
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    $parameters{'session'} = $session{'sessionID'};
+    &writeSessionFile;
+
+    $parameters{'itemUuid'} = $item{'uuid'};
+    $parameters{'question'} = $item{'question'};
+    $parameters{'answer'} = $item{'answer'};
+    $parameters{'dueTime'} = $item{'dueTime'};
+    $parameters{'interval'} = $item{'interval'};
+
+    &editPage('(flipped)');
+}
+
+sub duplicateItem() {
     my (@k);
     my (%newItem);
     if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
@@ -1029,10 +1069,10 @@ sub flipItem() {
         return;
     }
     $newItem{'uuid'} = &uuidgen;
-    $newItem{'question'} = $item{'answer'};
-    $newItem{'answer'} = $item{'question'};
-    $newItem{'dueTime'} = 0; # new
-    $newItem{'interval'} = $defaultInterval;
+    $newItem{'question'} = $item{'question'};
+    $newItem{'answer'} = $item{'answer'};
+    $newItem{'dueTime'} = $item{'dueTime'};
+    $newItem{'interval'} = $item{'interval'};
 
     my (@newPageUuids) = ();
     while ($#pageUuids >= 0) {
@@ -1062,6 +1102,8 @@ sub flipItem() {
     $parameters{'answer'} = $item{'answer'};
     $parameters{'dueTime'} = $item{'dueTime'};
     $parameters{'interval'} = $item{'interval'};
+
+    &editPage('(duplicate item inserted)');
 }
 
 # Delete the current item and point the edit interface at the next
