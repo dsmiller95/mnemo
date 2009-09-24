@@ -377,8 +377,8 @@ sub questionPage() {
         return;
     }
 
-    my ($sessionDuration) = &prettyDuration(time() - $parameters{'session'});
-    my ($interval) = &prettyDuration($item{'interval'});
+    my ($sessionDuration) = &prettyInterval(time() - $parameters{'session'});
+    my ($interval) = &prettyInterval($item{'interval'});
     my ($widthTerm) = &userWidthTerm;
     my ($editButton) = '';
     if (0 != $user{'showEdit'}) {
@@ -420,7 +420,7 @@ sub userWidthTerm() {
     return $term;
 }
 
-sub prettyDuration() {
+sub prettyInterval() {
     my ($d) = @_;
 
     if ($d > (2 * $YEAR)) {
@@ -469,8 +469,8 @@ sub answerPage() {
         return;
     }
 
-    my ($sessionDuration) = &prettyDuration(time() - $parameters{'session'});
-    my ($interval) = &prettyDuration($item{'interval'});
+    my ($sessionDuration) = &prettyInterval(time() - $parameters{'session'});
+    my ($interval) = &prettyInterval($item{'interval'});
     my ($widthTerm) = &userWidthTerm;
 
     my ($editButton) = '';
@@ -520,8 +520,14 @@ sub editPage() {
 
     my ($itemIdx) = &findStringInList($session{'itemUuid'}, @pageUuids) + 1;
     my ($itemCount) = $#pageUuids + 1;
+    my ($intervalStr) = &prettyInterval($item{'interval'});
     my ($dueTimeStr) = &timeToStr($item{'dueTime'});
-    my ($intervalStr) = &prettyDuration($item{'interval'});
+    my ($dueIn) = $item{'dueTime'} - time;
+    if ($dueIn <= 0) {
+        $dueTimeStr .= ' (due now)';
+    } else {
+        $dueTimeStr .= (' (due in ' . &prettyInterval($dueIn) . ')');
+    }
     print <<"EndOfEditPage";
 
 HTTP/1.0 200 OK
@@ -538,8 +544,8 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <table border="1" cellpadding="5">
 <tr><th>Question</th><td><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
 <tr><th>Answer</th><td><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
-<tr><th>Due Time</th><td>$dueTimeStr</td></tr>
 <tr><th>Interval</th><td>$intervalStr</td></tr>
+<tr><th>Due Time</th><td>$dueTimeStr</td></tr>
 <tr><th>QID</th><td>$item{'uuid'}</td></tr>
 </table>
 <nobr>
