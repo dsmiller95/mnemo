@@ -1,0 +1,111 @@
+#!/usr/bin/env perl
+
+# This tool takes filenames on the command line and attempts to
+# convert them into data-embedded HTML IMG tags, output to STDOUT.
+
+@sym = (
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    '+', '/'
+);
+
+###  M A I N
+
+if ($#ARGV < 0) {
+    die "This command expects image file names.\n";
+}
+
+foreach $inFile (@ARGV) {
+    &convertFile($inFile);
+}
+
+exit(0);
+
+sub convertFile() {
+    my ($fileName) = @_;
+
+    my ($mimeType) = `file --brief --mime-type "$fileName"`;
+    chomp($mimeType);
+
+    if (length($mimeType) == 0) {
+        print "<!-- Couldn't figure out mime type for '$fileName'. -->\n";
+        return;
+    }
+
+    if (! open(INFILE, "<$fileName")) {
+        print "<!-- Couldn't read '$fileName'. -->\n";
+        return;
+    }
+    $data = join('', <INFILE>);
+    close(INFILE);
+
+    if (length($data) == 0) {
+        print "<!-- '$fileName' was empty. -->\n";
+        return;
+    }
+
+    print "<img src=\"data:$mimeType;base64, ";
+    print &convertToBase64($data);
+    print "\" />\n";
+}
+
+sub convertToBase64() {
+    my ($data) = join('', @_);
+
+    my ($base64) = '';
+
+    my (@chunks);
+    while (length($data) > 0) {
+        push(@chunks, substr($data, 0, 3));
+        $data = substr($data, 3);
+    }
+    my ($ch, @b, @s, $l);
+    $l = 0;
+    foreach $ch (@chunks) {
+        if ($l >= 64) {
+            $base64 .= ' ';
+            $l = 0;
+        }
+        @b = ();
+        while (length($ch) > 0) {
+            push(@b, substr($ch, 0, 1));
+            $ch = substr($ch, 1);
+        }
+        @s = (0, 0, 0, 0);
+        # first byte (is always present at this point)
+        $s[0] = (ord($b[0]) >> 2);
+        $s[1] = ((ord($b[0]) & 0x03) << 4);
+        # second byte
+        if ($#b > 0) {
+            $s[1] += (ord($b[1]) >> 4);
+            $s[2] = ((ord($b[1]) & 0x0f) << 2);
+        }
+        # third byte
+        if ($#b > 1) {
+            $s[2] += (ord($b[2]) >> 6);
+            $s[3] = (ord($b[2]) & 0x3f);
+        }
+
+        foreach my $n (@s) {
+            $n = $sym[$n];
+        }
+
+
+        if ($#b < 1) {
+            $s[2] = '=';
+        }
+        if ($#b < 2) {
+            $s[3] = '=';
+        }
+
+        $base64 .= join('', @s);
+
+        $l += 4;
+    }
+
+    return $base64;
+}
+

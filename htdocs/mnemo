@@ -34,8 +34,8 @@ $defaultInterval = 60;
 
 $maxPagePathFieldLength = 60;
 
-$qnaFieldRows = 3;
-$qnaFieldCols = 60;
+$qnaFieldRows = 4;
+$qnaFieldCols = 80;
 
 $opsDir = $ENV{'HOME'} . '/httpi_mnemo/mnemo_ops';
 
