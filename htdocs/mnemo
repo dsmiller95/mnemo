@@ -606,8 +606,6 @@ sub saveItem() {
     }
     $item{'question'} = $parameters{'question'};
     $item{'answer'} = $parameters{'answer'};
-    $item{'dueTime'} = 0 + $parameters{'dueTime'};
-    $item{'interval'} = 0 + $parameters{'interval'};
 
     $item{'question'} =~ s/\r?\n/<br \/>/mg; # HTML'ize newlines
     $item{'answer'} =~ s/\r?\n/<br \/>/mg; # HTML'ize newlines
