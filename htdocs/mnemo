@@ -145,6 +145,10 @@ sub main() {
             &downloadPages($session{'pagePath'});
         } elsif ($parameters{'action'} eq 'downloadAll') {
             &downloadPages(&getAllPagePaths);
+        } elsif ($parameters{'action'} eq 'resetInterval') {
+            &resetInterval;
+        } elsif ($parameters{'action'} eq 'makeDueNow') {
+            &makeDueNow
         } else {
             &editPage;
         }
@@ -544,8 +548,8 @@ Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <table border="1" cellpadding="5">
 <tr><th>Question</th><td>$item{'question'}<br /><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
 <tr><th>Answer</th><td>$item{'answer'}<br /><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
-<tr><th>Interval</th><td>$intervalStr</td></tr>
-<tr><th>Due Time</th><td>$dueTimeStr</td></tr>
+<tr><th>Interval</th><td>$intervalStr <button type="submit" name="action" value="resetInterval">Reset</button></td></tr>
+<tr><th>Due Time</th><td>$dueTimeStr <button type="submit" name="action" value="makeDueNow">Make due now</button></td></tr>
 <tr><th>QID</th><td>$item{'uuid'}</td></tr>
 </table>
 <nobr>
@@ -620,6 +624,58 @@ sub saveItem() {
     $session{'sessionID'} = time;
     &writeSessionFile;
     $parameters{'session'} = $session{'sessionID'};
+}
+
+sub resetInterval() {
+    my (@k);
+    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
+        &errorPage("saveItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
+        return;
+    }
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("saveItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        return;
+    }
+    $item{'interval'} = $defaultInterval;
+
+    $page{$session{'itemUuid'}} = {%item};
+    &writePageFile;
+
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    &writeSessionFile;
+    $parameters{'session'} = $session{'sessionID'};
+
+    &editPage;
+}
+
+sub makeDueNow() {
+    my (@k);
+    if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
+        &errorPage("saveItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
+        return;
+    }
+    &readPageFile;
+    %item = %{$page{$session{'itemUuid'}}};
+    @k = keys(%item);
+    if ($#k < 0) {
+        &errorPage("saveItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        return;
+    }
+    $item{'dueTime'} = time;
+
+    $page{$session{'itemUuid'}} = {%item};
+    &writePageFile;
+
+    # refresh so the session doesn't expire
+    $session{'sessionID'} = time;
+    &writeSessionFile;
+    $parameters{'session'} = $session{'sessionID'};
+
+    &editPage;
 }
 
 sub gotoPrevNextItem() {
