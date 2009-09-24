@@ -1337,14 +1337,12 @@ EndOfReportPage
         $parameters{'user'} = $u;
         &readSessionFile;
         print "'$u'" .
+              ' ' . &timeToStr($session{'sessionID'}) .
               " ($session{'response_0'}," .
               "$session{'response_1'}," .
               "$session{'response_2'}," .
               "$session{'response_3'})" .
-              ": ";
-        if ($#users == 0) {
-            print "\n";
-        }
+              ":\n";
 
         ($t_done, $t_due, $t_new, $t_dueTomorrow) = (0, 0, 0, 0);
         $d = "$opsDir/data/$u/";
@@ -1379,10 +1377,8 @@ EndOfReportPage
                 print "$new new, $due due, $done done ($dueTomorrow due tomorrow).\n";
             }
         }
-        if ($#users == 0) {
-            print '    TOTALS: ';
-        }
-        print "$t_new new, $t_due due, $t_done done ($t_dueTomorrow due tomorrow).\n";
+        print '    TOTALS: ' .
+              "$t_new new, $t_due due, $t_done done ($t_dueTomorrow due tomorrow).\n";
     }
 }
 
