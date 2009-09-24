@@ -542,8 +542,8 @@ Content-type: text/html; charset=utf-8
 <input type="hidden" name="itemUuid" value="$item{'uuid'}">
 Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <table border="1" cellpadding="5">
-<tr><th>Question</th><td><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
-<tr><th>Answer</th><td><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
+<tr><th>Question</th><td>$item{'question'}<br /><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
+<tr><th>Answer</th><td>$item{'answer'}<br /><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
 <tr><th>Interval</th><td>$intervalStr</td></tr>
 <tr><th>Due Time</th><td>$dueTimeStr</td></tr>
 <tr><th>QID</th><td>$item{'uuid'}</td></tr>
