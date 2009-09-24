@@ -440,6 +440,25 @@ sub prettyDuration() {
     }
 }
 
+sub twoDigit() {
+    my ($n) = @_;
+    return substr('00' . $n, -2);
+}
+
+sub timeToStr() {
+    my ($t) = @_;
+
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t);
+    $sec = &twoDigit($sec);
+    $min = &twoDigit($min);
+    $hour = &twoDigit($hour);
+    $mday = &twoDigit($mday);
+    $mon = &twoDigit($mon + 1);
+    $year += 1900;
+
+    return "$year-$mon-$mday\@$hour:$min:$sec";
+}
+
 sub answerPage() {
     my (@k);
     &readPageFile;
@@ -501,7 +520,8 @@ sub editPage() {
 
     my ($itemIdx) = &findStringInList($session{'itemUuid'}, @pageUuids) + 1;
     my ($itemCount) = $#pageUuids + 1;
-
+    my ($dueTimeStr) = &timeToStr($item{'dueTime'});
+    my ($intervalStr) = &prettyDuration($item{'interval'});
     print <<"EndOfEditPage";
 
 HTTP/1.0 200 OK
@@ -516,11 +536,11 @@ Content-type: text/html; charset=utf-8
 <input type="hidden" name="itemUuid" value="$item{'uuid'}">
 Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
 <table border="1" cellpadding="5">
-<tr><th>QID</th><td>$item{'uuid'}</td></tr>
 <tr><th>Question</th><td><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
 <tr><th>Answer</th><td><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
-<tr><th>Due Time</th><td><input type="text" name="dueTime" value="$item{'dueTime'}"></td></tr>
-<tr><th>Interval</th><td><input type="text" name="interval" value="$item{'interval'}"></td></tr>
+<tr><th>Due Time</th><td>$dueTimeStr</td></tr>
+<tr><th>Interval</th><td>$intervalStr</td></tr>
+<tr><th>QID</th><td>$item{'uuid'}</td></tr>
 </table>
 <nobr>
 <button type="submit" name="action" value="save">Save</button>
