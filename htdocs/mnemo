@@ -559,7 +559,7 @@ Content-type: text/html; charset=utf-8
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 <input type="hidden" name="itemUuid" value="$item{'uuid'}">
-Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg
+<nobr>Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg</nobr>
 <table border="1" cellpadding="5">
 <tr><th>Question</th><td>$item{'question'}<br /><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
 <tr><th>Answer</th><td>$item{'answer'}<br /><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
@@ -1105,7 +1105,7 @@ sub duplicateItem() {
     $parameters{'dueTime'} = $item{'dueTime'};
     $parameters{'interval'} = $item{'interval'};
 
-    &editPage('(duplicate item inserted)');
+    &editPage('(duplicated)');
 }
 
 # Delete the current item and point the edit interface at the next
