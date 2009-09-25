@@ -455,6 +455,10 @@ sub twoDigit() {
 sub timeToStr() {
     my ($t) = @_;
 
+    if (0 == $t) {
+        return 'new';
+    }
+
     my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime($t);
     $sec = &twoDigit($sec);
     $min = &twoDigit($min);
@@ -528,14 +532,12 @@ sub editPage() {
     my ($itemIdx) = &findStringInList($session{'itemUuid'}, @pageUuids) + 1;
     my ($itemCount) = $#pageUuids + 1;
     my ($intervalStr) = &prettyInterval($item{'interval'});
-    my ($dueTimeStr);
     my ($makeNewButton) = '<button type="submit" name="action" value="makeNew">Make new</button>';
     my ($makeDueButton) = '<button type="submit" name="action" value="makeDueNow">Make due now</button>';
+    my ($dueTimeStr) = &timeToStr($item{'dueTime'});
     if (0 == $item{'dueTime'}) {
-        $dueTimeStr = '(new)';
         $makeNewButton = '';
     } else {
-        $dueTimeStr = &timeToStr($item{'dueTime'});
         my ($dueIn) = $item{'dueTime'} - time;
         if ($dueIn <= 0) {
             $dueTimeStr .= ' (due now)';
