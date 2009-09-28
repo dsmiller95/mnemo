@@ -1390,7 +1390,7 @@ sub passwordPage() {
     &readUserFile;
 
     if ($parameters{'password'} ne $user{'password'}) {
-        &debugPage("parampass: '$parameters{'password'}' userpass: '$user{'password'}'");
+        &loginPage('Invalid.');
         return;
     }
 
@@ -1414,6 +1414,7 @@ EndOfPasswordPage
 }
 
 sub loginPage() {
+    my ($msg) = @_;
     print <<"EndOfLoginPage";
 HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
@@ -1422,6 +1423,7 @@ Content-type: text/html; charset=utf-8
 <head><title>Mnemo</title></head>
 <body bgcolor="#ffffff">
 <form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
+$msg<br />
 user <input type="text" name="user" value="$parameters{'user'}" /> <br />
 password <input type="password" name="password" /> <br />
 <input type="submit" value="Log in" />
