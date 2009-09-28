@@ -1,6 +1,5 @@
 
 TODO:
- - Replace "Reset" interval with "1 minute", "1 hour" and "1 day" buttons.
  - PORT TO PHP with MySQL.
  - Internationalize the user interface.
  - Change passwords to salted hashes so they're not stored in the clear.

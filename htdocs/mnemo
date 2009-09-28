@@ -148,8 +148,12 @@ sub main() {
             &downloadPages($session{'pagePath'});
         } elsif ($parameters{'action'} eq 'downloadAll') {
             &downloadPages(&getAllPagePaths);
-        } elsif ($parameters{'action'} eq 'resetInterval') {
-            &resetInterval;
+        } elsif ($parameters{'action'} eq 'setIntervalMinute') {
+            &setInterval(60);
+        } elsif ($parameters{'action'} eq 'setIntervalHour') {
+            &setInterval(3600);
+        } elsif ($parameters{'action'} eq 'setIntervalDay') {
+            &setInterval(86400);
         } elsif ($parameters{'action'} eq 'makeNew') {
             &makeNew;
         } elsif ($parameters{'action'} eq 'makeDueNow') {
@@ -562,43 +566,55 @@ Content-type: text/html; charset=utf-8
 <input type="hidden" name="session" value="$parameters{'session'}">
 <input type="hidden" name="itemUuid" value="$item{'uuid'}">
 <nobr>Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg</nobr>
+<table border="0" cellpadding="0"><tr><td>
 <table border="1" cellpadding="5">
 <tr><th>Question</th><td>$item{'question'}<br /><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
 <tr><th>Answer</th><td>$item{'answer'}<br /><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
-<tr><th>Interval</th><td>$intervalStr <button type="submit" name="action" value="resetInterval">Reset</button></td></tr>
+<tr><th>Interval</th><td>$intervalStr <button type="submit" name="action" value="setIntervalMinute">1 minute</button> <button type="submit" name="action" value="setIntervalHour">1 hour</button> <button type="submit" name="action" value="setIntervalDay">1 day</button></td></tr>
 <tr><th>Due Time</th><td>$dueTimeStr $makeDueButton $makeNewButton</td></tr>
 <tr><th>QID</th><td>$item{'uuid'}</td></tr>
 </table>
+<table border="0" cellpadding="0" width="100%">
+<tr><td>
 <nobr>
-<button type="submit" name="action" value="save">Save</button>
 <button type="submit" name="action" value="flip">Flip</button>
 <button type="submit" name="action" value="duplicate">Duplicate</button>
-<button type="submit" name="action" value="add">Add new item</button>
 <button type="submit" name="action" value="delete">Delete</button>
-<button type="submit" name="action" value="quit">Quit editing</button>
+<button type="submit" name="action" value="add">Add new item</button>
 </nobr>
-<br />
+</td>
+<td align="right">
 <nobr>
-<button type="submit" name="action" value="prevItem">Previous item</button>
-<button type="submit" name="action" value="nextItem">Next item</button>
+<button align="right" type="submit" name="action" value="save">Save</button>
+<button align="right" type="submit" name="action" value="quit">Quit editing</button>
+</nobr>
+</td></tr>
+</table>
+<table border="0" cellpadding="0" width="100%">
+<tr>
+<td width="33%"><button type="submit" name="action" value="prevPage">|&lt;&lt;-- Previous page</button></td>
+<td width="33%" align="center">
+<nobr>
+<button type="submit" name="action" value="prevItem">&lt;-- Previous item</button>
+<button type="submit" name="action" value="nextItem">Next item --&gt;</button>
+</nobr>
+</td>
+<td width="33%" align="right"><button type="submit" name="action" value="nextPage">Next page --&gt;&gt;|</button></td>
+</tr>
+</table>
+</table>
 <!-- <button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"> -->
-</nobr>
-<br />
-<nobr>
-<button type="submit" name="action" value="prevPage">Previous page</button>
-<button type="submit" name="action" value="nextPage">Next page</button>
 <!-- <button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath" size="$maxPagePathFieldLength"> -->
+<nobr>
+<button type="submit" name="action" value="movePage">Rename this page:</button><input type="text" name="movePagePath" value="$session{'pagePath'}" size="$maxPagePathFieldLength">
 </nobr>
 <br />
 <nobr>
-<button type="submit" name="action" value="deletePage">Delete this page</button>
 <button type="submit" name="action" value="addPage">Add new page:</button>
 <input type="text" name="addPagePath" size="$maxPagePathFieldLength">
 </nobr>
 <br />
-<nobr>
-<button type="submit" name="action" value="movePage">Rename this page:</button><input type="text" name="movePagePath" size="$maxPagePathFieldLength">
-</nobr>
+<button type="submit" name="action" value="deletePage">Delete this page</button>
 <br />
 <a target="_new" href="mnemo?user=$parameters{'user'}&report">Show a report for $parameters{'user'}.</a>
 <br />
@@ -644,7 +660,9 @@ sub saveItem() {
     $parameters{'session'} = $session{'sessionID'};
 }
 
-sub resetInterval() {
+sub setInterval() {
+    my ($seconds) = @_;
+
     my (@k);
     if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
         &errorPage("saveItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
@@ -657,7 +675,7 @@ sub resetInterval() {
         &errorPage("saveItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
-    $item{'interval'} = $defaultInterval;
+    $item{'interval'} = $seconds;
 
     $page{$session{'itemUuid'}} = {%item};
     &writePageFile;
@@ -667,7 +685,7 @@ sub resetInterval() {
     &writeSessionFile;
     $parameters{'session'} = $session{'sessionID'};
 
-    &editPage('(interval reset)');
+    &editPage('(interval set)');
 }
 
 sub makeNew() {
