@@ -8,9 +8,9 @@
 
 # DATA STRUCTURES
 # ===============
-# A "page" is a file of "items".
-# The page file is a text file whose name ends in ".mnemo".
-# Each line of the page file is an "item".
+# A "group" is a file of "items".
+# The group file is a text file whose name ends in ".mnemo".
+# Each line of the group file is an "item".
 # Item fields are:
 #   - uuid (output from uuidgen) [required]
 #   - question [required]
@@ -22,7 +22,7 @@
 # Question and answer are to be in text/HTML format using UTF-8.
 # If an item doesn't have an interval, that's set to a default when read.
 # If the item doesn't have a dueTime, it is ignored until no other
-#   items on the page are due.
+#   items in the group are due.
 
 use Encode qw(encode decode);
 
@@ -32,7 +32,7 @@ $defaultSessionDuration = 15 * 60; # Fifteen minutes.
 $minimumInterval = 60;
 $defaultInterval = 60;
 
-$maxPagePathFieldLength = 60;
+$maxGroupPathFieldLength = 60;
 
 $qnaFieldRows = 4;
 $qnaFieldCols = 80;
@@ -129,25 +129,25 @@ sub main() {
         } elsif ($parameters{'action'} eq 'prevItem') {
             &gotoPrevNextItem('prev');
             &editPage;
-        } elsif ($parameters{'action'} eq 'nextPage') {
-            &gotoPrevNextPage('next');
+        } elsif ($parameters{'action'} eq 'nextGroup') {
+            &gotoPrevNextGroup('next');
             &editPage;
-        } elsif ($parameters{'action'} eq 'prevPage') {
-            &gotoPrevNextPage('prev');
+        } elsif ($parameters{'action'} eq 'prevGroup') {
+            &gotoPrevNextGroup('prev');
             &editPage;
-        } elsif ($parameters{'action'} eq 'deletePage') {
-            &deletePage;
-            # (editPage is called from inside deletePage)
-        } elsif ($parameters{'action'} eq 'addPage') {
-            &addPage;
-            # (editPage is called from inside addPage)
-        } elsif ($parameters{'action'} eq 'movePage') {
-            &movePage;
-            # (editPage is called from inside movePage)
-        } elsif ($parameters{'action'} eq 'downloadPage') {
-            &downloadPages($session{'pagePath'});
+        } elsif ($parameters{'action'} eq 'deleteGroup') {
+            &deleteGroup;
+            # (editPage is called from inside deleteGroup)
+        } elsif ($parameters{'action'} eq 'addGroup') {
+            &addGroup;
+            # (editPage is called from inside addGroup)
+        } elsif ($parameters{'action'} eq 'moveGroup') {
+            &moveGroup;
+            # (editPage is called from inside moveGroup)
+        } elsif ($parameters{'action'} eq 'downloadGroup') {
+            &downloadGroups($session{'groupPath'});
         } elsif ($parameters{'action'} eq 'downloadAll') {
-            &downloadPages(&getAllPagePaths);
+            &downloadGroups(&getAllGroupPaths);
         } elsif ($parameters{'action'} eq 'setIntervalMinute') {
             &setInterval(60);
         } elsif ($parameters{'action'} eq 'setIntervalHour') {
@@ -192,12 +192,12 @@ sub main() {
     }
 }
 
-sub readPageFile() {
+sub readGroupFile() {
     my ($line, $uuid, $question, $answer, $interval, $dueTime);
 
-    %page = ();
-    @pageUuids = (); # (this is for keeping them in order in the file)
-    foreach $line (&readLinesFromFile("$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo")) {
+    %group = ();
+    @groupUuids = (); # (this is for keeping them in order in the file)
+    foreach $line (&readLinesFromFile("$opsDir/data/$parameters{'user'}/$session{'groupPath'}.mnemo")) {
         chomp($line);
         if (($uuid, $question, $answer, $interval, $dueTime) =
                 split(/\\/, $line)) {
@@ -206,8 +206,8 @@ sub readPageFile() {
             } elsif ($minimumInterval > $interval) {
                 $interval = $minimumInterval;
             }
-            push(@pageUuids, $uuid);
-            $page{$uuid} = {
+            push(@groupUuids, $uuid);
+            $group{$uuid} = {
                 'uuid' => $uuid,
                 'question' => $question,
                 'answer' => $answer,
@@ -216,23 +216,22 @@ sub readPageFile() {
             };
         }
     }
-    close(PAGE);
 }
 
-sub writePageFile() {
+sub writeGroupFile() {
     my ($tmp);
-    open(PAGE, ">$opsDir/data/$parameters{'user'}/$session{'pagePath'}.mnemo");
-    print PAGE "# $session{'pagePath'}\n";
-    foreach my $uuid (@pageUuids) {
-        %tmp = %{$page{$uuid}};
-        print PAGE join('\\', $tmp{'uuid'}, $tmp{'question'},
+    open(GROUP, ">$opsDir/data/$parameters{'user'}/$session{'groupPath'}.mnemo");
+    print GROUP "# $session{'groupPath'}\n";
+    foreach my $uuid (@groupUuids) {
+        %tmp = %{$group{$uuid}};
+        print GROUP join('\\', $tmp{'uuid'}, $tmp{'question'},
                         $tmp{'answer'}, $tmp{'interval'},
                         $tmp{'dueTime'}), "\n";
     }
-    close(PAGE);
+    close(GROUP);
 }
 
-sub getAllPagePaths() {
+sub getAllGroupPaths() {
     my ($d) = "$opsDir/data/$parameters{'user'}/";
     my (@paths) = `find "$d" -type f -name '*.mnemo'`;
     chomp(@paths);
@@ -243,55 +242,55 @@ sub getAllPagePaths() {
     return sort(@paths);
 }
 
-sub getNextPage() {
+sub getNextGroup() {
     my ($i, $d, $p, $oldPath, @paths);
     my ($getIt) = (0);
-    $oldPath = $session{'pagePath'};
-    $session{'pagePath'} = '';
+    $oldPath = $session{'groupPath'};
+    $session{'groupPath'} = '';
     $d = "$opsDir/data/$parameters{'user'}/";
     @paths = `find "$d" -type f -name '*.mnemo' | sort`;
     chomp(@paths);
     for ($i = 0; $i <= $#paths; $i++) {
         $p = substr(substr($paths[$i], length($d)), 0, -6);
         if ($getIt != 0) {
-            $session{'pagePath'} = $p;
+            $session{'groupPath'} = $p;
             last;
         } elsif ($p eq $oldPath) {
             $getIt = 1;
         }
     }
     &writeSessionFile;
-    &readPageFile;
+    &readGroupFile;
 }
 
 sub getNextDueItem() {
-    my ($fullPagePath) = $opsDir . '/data/' . $parameters{'user'} .
-                        '/' . $session{'pagePath'} . '.mnemo';
+    my ($fullGroupPath) = $opsDir . '/data/' . $parameters{'user'} .
+                        '/' . $session{'groupPath'} . '.mnemo';
 
-    # Start from current pagePath.
-    # If pagePath is unreadable or doesn't exist then look for
+    # Start from current groupPath.
+    # If groupPath is unreadable or doesn't exist then look for
     # the top one, or error out.
-    if (!(-r $fullPagePath)) {
+    if (!(-r $fullGroupPath)) {
         my ($d) = "$opsDir/data/$parameters{'user'}/";
         my ($p) = `find "$d" -type f -name '*.mnemo' | sort`;
         chomp($p);
         if (-r $p) {
-            $session{'pagePath'} = substr(substr($p, length($d)), 0, -6);
+            $session{'groupPath'} = substr(substr($p, length($d)), 0, -6);
         } else {
             &errorPage("getNextDueItem: Can't seem to find any data files.");
             exit(1);
         }
     }
-    # Load the page and grep for items which have come due.
-    # If none have come due, look for next pagePath or finishPage.
+    # Load the group and grep for items which have come due.
+    # If none have come due, look for next groupPath or finishPage.
     # From due items, populate %item with the one with the longest interval.
-    &readPageFile;
+    &readGroupFile;
     undef(%item);
     my ($t) = time;
     my (@newItems) = ();
     my ($u, $i);
-    foreach $u (@pageUuids) {
-        $i = $page{$u};
+    foreach $u (@groupUuids) {
+        $i = $group{$u};
         if (0 == $$i{'dueTime'}) {
             push(@newItems, $i);
         } elsif ($t >= $$i{'dueTime'}) {
@@ -317,11 +316,11 @@ sub recordResponse() {
     my ($r) = $parameters{'response'};
     my ($factor);
     my (@k);
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("recordResponse: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("recordResponse: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         exit(1);
     }
 
@@ -351,34 +350,22 @@ sub recordResponse() {
 
     $item{'interval'} = $factor;
     $item{'dueTime'} = time + $factor;
-    $page{$item{'uuid'}} = {%item};
-    &writePageFile;
+    $group{$item{'uuid'}} = {%item};
+    &writeGroupFile;
 }
 
-# If not in edit mode (then assume question/answer mode):
-#   - Requiring page and item:
-#       - Show the answer to this item.
-#       - Record score for this item (redirect to ShowNextm, this page).
-#       - Switch to edit mode ((on this item) in this page).
-#   - Requiring a page:
-#       - If this page has no items then switch to edit mode,
-#           add a new item and then edit that item.
-#   - If no pages exist, switch to edit mode and redirect to
-#       Request "New Page" dialog.
-#   - DEFAULT: Show the next item (this page).  If no due items,
-#       go to next page or back to the top of the tree.
 sub questionPage() {
     my (@k);
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
         &getNextDueItem;
         @k = keys(%item);
     }
     while ($#k < 0) {
-        &getNextPage;
-        if (length($session{'pagePath'}) == 0) {
+        &getNextGroup;
+        if (length($session{'groupPath'}) == 0) {
             &finishedPage;
             return;
         }
@@ -408,7 +395,7 @@ Content-type: text/html; charset=utf-8
 <form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
-$session{'pagePath'}
+$session{'groupPath'}
 <table border=1 cellpadding=5 $widthTerm>
 <tr><td>$item{'question'}</td></tr>
 <tr><td><button name="action" value="showAnswer" type="submit">Show answer</button></td></tr>
@@ -478,11 +465,11 @@ sub timeToStr() {
 
 sub answerPage() {
     my (@k);
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("answerPage: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("answerPage: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
 
@@ -505,7 +492,7 @@ Content-type: text/html; charset=utf-8
 <form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
-$session{'pagePath'}
+$session{'groupPath'}
 <table border=1 cellpadding=5 $widthTerm>
 <tr><td>$item{'question'}</td></tr>
 <tr><td>$item{'answer'}</td></tr>
@@ -527,16 +514,16 @@ EndOfAnswerPage
 sub editPage() {
     my ($msg) = @_;
     my (@k);
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("editPage: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("editPage: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
 
-    my ($itemIdx) = &findStringInList($session{'itemUuid'}, @pageUuids) + 1;
-    my ($itemCount) = $#pageUuids + 1;
+    my ($itemIdx) = &findStringInList($session{'itemUuid'}, @groupUuids) + 1;
+    my ($itemCount) = $#groupUuids + 1;
     my ($intervalStr) = &prettyInterval($item{'interval'});
     my ($makeNewButton) = '<button type="submit" name="action" value="makeNew">Make new</button>';
     my ($makeDueButton) = '<button type="submit" name="action" value="makeDueNow">Make due now</button>';
@@ -565,14 +552,14 @@ Content-type: text/html; charset=utf-8
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 <input type="hidden" name="itemUuid" value="$item{'uuid'}">
-<nobr>Page: '$session{'pagePath'}', item #$itemIdx of $itemCount $msg</nobr>
+<nobr>Group: '$session{'groupPath'}', item #$itemIdx of $itemCount $msg</nobr>
 <table border="0" cellpadding="0"><tr><td>
 <table border="1" cellpadding="5">
 <tr><th>Question</th><td>$item{'question'}<br /><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
 <tr><th>Answer</th><td>$item{'answer'}<br /><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
 <tr><th>Interval</th><td>$intervalStr <button type="submit" name="action" value="setIntervalMinute">1 minute</button> <button type="submit" name="action" value="setIntervalHour">1 hour</button> <button type="submit" name="action" value="setIntervalDay">1 day</button></td></tr>
 <tr><th>Due Time</th><td>$dueTimeStr $makeDueButton $makeNewButton</td></tr>
-<tr><th>QID</th><td>$item{'uuid'}</td></tr>
+<tr><th>QID</th><td><tt>$item{'uuid'}</tt></td></tr>
 </table>
 <table border="0" cellpadding="0" width="100%">
 <tr><td>
@@ -592,36 +579,36 @@ Content-type: text/html; charset=utf-8
 </table>
 <table border="0" cellpadding="0" width="100%">
 <tr>
-<td width="33%"><button type="submit" name="action" value="prevPage">|&lt;&lt;-- Previous page</button></td>
+<td width="33%"><button type="submit" name="action" value="prevGroup">|&lt;&lt;-- Previous group</button></td>
 <td width="33%" align="center">
 <nobr>
 <button type="submit" name="action" value="prevItem">&lt;-- Previous item</button>
 <button type="submit" name="action" value="nextItem">Next item --&gt;</button>
 </nobr>
 </td>
-<td width="33%" align="right"><button type="submit" name="action" value="nextPage">Next page --&gt;&gt;|</button></td>
+<td width="33%" align="right"><button type="submit" name="action" value="nextGroup">Next group --&gt;&gt;|</button></td>
 </tr>
 </table>
 </table>
 <!-- <button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"> -->
-<!-- <button type="submit" name="action" value="gotoPage">Go to page:</button><input type="text" name="pagePath" size="$maxPagePathFieldLength"> -->
+<!-- <button type="submit" name="action" value="gotoGroup">Go to group:</button><input type="text" name="groupPath" size="$maxGroupPathFieldLength"> -->
 <nobr>
-<button type="submit" name="action" value="movePage">Rename this page:</button><input type="text" name="movePagePath" value="$session{'pagePath'}" size="$maxPagePathFieldLength">
+<button type="submit" name="action" value="moveGroup">Rename this group:</button><input type="text" name="moveGroupPath" value="$session{'groupPath'}" size="$maxGroupPathFieldLength">
 </nobr>
 <br />
 <nobr>
-<button type="submit" name="action" value="addPage">Add new page:</button>
-<input type="text" name="addPagePath" size="$maxPagePathFieldLength">
+<button type="submit" name="action" value="addGroup">Add new group:</button>
+<input type="text" name="addGroupPath" size="$maxGroupPathFieldLength">
 </nobr>
 <br />
-<button type="submit" name="action" value="deletePage">Delete this page</button>
+<button type="submit" name="action" value="deleteGroup">Delete this group</button>
 <br />
 <a target="_new" href="mnemo?user=$parameters{'user'}&report">Show a report for $parameters{'user'}.</a>
 <br />
 <nobr>
 Download:
-<a href="mnemo?user=$parameters{'user'}&session=$parameters{'session'}&action=downloadPage">(this page)</a>
-<a href="mnemo?user=$parameters{'user'}&session=$parameters{'session'}&action=downloadAll">(all pages)</a>
+<a href="mnemo?user=$parameters{'user'}&session=$parameters{'session'}&action=downloadGroup">(this group)</a>
+<a href="mnemo?user=$parameters{'user'}&session=$parameters{'session'}&action=downloadAll">(all groups)</a>
 </nobr>
 </form>
 </body>
@@ -635,11 +622,11 @@ sub saveItem() {
         &errorPage("saveItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("saveItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("saveItem: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
     $item{'question'} = $parameters{'question'};
@@ -651,8 +638,8 @@ sub saveItem() {
     $item{'question'} =~ s/\\/&92;/g; # HTML'ize backslashes
     $item{'answer'} =~ s/\\/&92;/g; # HTML'ize backslashes
 
-    $page{$session{'itemUuid'}} = {%item};
-    &writePageFile;
+    $group{$session{'itemUuid'}} = {%item};
+    &writeGroupFile;
 
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
@@ -668,17 +655,17 @@ sub setInterval() {
         &errorPage("saveItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("saveItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("saveItem: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
     $item{'interval'} = $seconds;
 
-    $page{$session{'itemUuid'}} = {%item};
-    &writePageFile;
+    $group{$session{'itemUuid'}} = {%item};
+    &writeGroupFile;
 
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
@@ -694,18 +681,18 @@ sub makeNew() {
         &errorPage("saveItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("saveItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("saveItem: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
     $item{'interval'} = $defaultInterval;
     $item{'dueTime'} = '0';
 
-    $page{$session{'itemUuid'}} = {%item};
-    &writePageFile;
+    $group{$session{'itemUuid'}} = {%item};
+    &writeGroupFile;
 
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
@@ -721,17 +708,17 @@ sub makeDueNow() {
         &errorPage("saveItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("saveItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("saveItem: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
     $item{'dueTime'} = time;
 
-    $page{$session{'itemUuid'}} = {%item};
-    &writePageFile;
+    $group{$session{'itemUuid'}} = {%item};
+    &writeGroupFile;
 
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
@@ -748,12 +735,12 @@ sub gotoPrevNextItem() {
         &errorPage("gotoPrevNextItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
+    &readGroupFile;
 
-    my ($idx) = &findStringInList($session{'itemUuid'}, @pageUuids);
+    my ($idx) = &findStringInList($session{'itemUuid'}, @groupUuids);
 
     if ($idx < 0) {
-        &errorPage("gotoPrevNextItem: idx=$idx Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("gotoPrevNextItem: idx=$idx Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
 
@@ -763,20 +750,20 @@ sub gotoPrevNextItem() {
             # else just stay on the first one
         }
     } else {
-        if ($idx < $#pageUuids) {
+        if ($idx < $#groupUuids) {
             $idx++; # next item
             # else just stay on the last one
         }
     }
 
-    $session{'itemUuid'} = $pageUuids[$idx];
+    $session{'itemUuid'} = $groupUuids[$idx];
 
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
     $parameters{'session'} = $session{'sessionID'};
     &writeSessionFile;
 
-    %item = %{$page{$session{'itemUuid'}}};
+    %item = %{$group{$session{'itemUuid'}}};
 
     $parameters{'itemUuid'} = $item{'uuid'};
     $parameters{'question'} = $item{'question'};
@@ -785,11 +772,11 @@ sub gotoPrevNextItem() {
     $parameters{'interval'} = $item{'interval'};
 }
 
-sub gotoPrevNextPage() {
+sub gotoPrevNextGroup() {
     my ($choice) = @_;
 
-    my (@pagePaths) = &getAllPagePaths;
-    my ($idx) = &findStringInList($session{'pagePath'}, @pagePaths);
+    my (@groupPaths) = &getAllGroupPaths;
+    my ($idx) = &findStringInList($session{'groupPath'}, @groupPaths);
 
     if ($choice eq 'prev') {
         if ($idx > 0) {
@@ -797,21 +784,21 @@ sub gotoPrevNextPage() {
             # else just stay on the first one
         }
     } else {
-        if ($idx < $#pagePaths) {
+        if ($idx < $#groupPaths) {
             $idx++; # next item
             # else just stay on the last one
         }
     }
 
-    $session{'pagePath'} = $pagePaths[$idx];
-    &readPageFile;
-    $session{'itemUuid'} = $pageUuids[0];
+    $session{'groupPath'} = $groupPaths[$idx];
+    &readGroupFile;
+    $session{'itemUuid'} = $groupUuids[0];
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
     $parameters{'session'} = $session{'sessionID'};
     &writeSessionFile;
 
-    %item = %{$page{$session{'itemUuid'}}};
+    %item = %{$group{$session{'itemUuid'}}};
 
     $parameters{'itemUuid'} = $item{'uuid'};
     $parameters{'question'} = $item{'question'};
@@ -820,37 +807,37 @@ sub gotoPrevNextPage() {
     $parameters{'interval'} = $item{'interval'};
 }
 
-sub deletePage() {
-    my (@pagePaths) = &getAllPagePaths;
-    my ($pageToDelete) = $session{'pagePath'};
-    my ($idx) = &findStringInList($pageToDelete, @pagePaths);
+sub deleteGroup() {
+    my (@groupPaths) = &getAllGroupPaths;
+    my ($groupToDelete) = $session{'groupPath'};
+    my ($idx) = &findStringInList($groupToDelete, @groupPaths);
 
     if ($idx < 0) {
-        &errorPage("deletePage: Can't delete unfound page, '$session{'pagePath'}'.");
+        &errorPage("deleteGroup: Can't delete unfound group, '$session{'groupPath'}'.");
         exit(1);
     }
-    if ($#pagePaths < 1) {
-        &editPage("(Can't delete the only page.)");
+    if ($#groupPaths < 1) {
+        &editPage("(Can't delete the only group.)");
         return;
     }
 
-    unlink("$opsDir/data/$parameters{'user'}/$pagePaths[$idx].mnemo");
+    unlink("$opsDir/data/$parameters{'user'}/$groupPaths[$idx].mnemo");
     &purgeEmptyFolders("$opsDir/data/$parameters{'user'}");
-    @pagePaths = &getAllPagePaths;
+    @groupPaths = &getAllGroupPaths;
 
-    if ($idx > $#pagePaths) {
+    if ($idx > $#groupPaths) {
         $idx--;
     }
 
-    $session{'pagePath'} = $pagePaths[$idx];
-    &readPageFile;
-    $session{'itemUuid'} = $pageUuids[0];
+    $session{'groupPath'} = $groupPaths[$idx];
+    &readGroupFile;
+    $session{'itemUuid'} = $groupUuids[0];
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
     $parameters{'session'} = $session{'sessionID'};
     &writeSessionFile;
 
-    %item = %{$page{$session{'itemUuid'}}};
+    %item = %{$group{$session{'itemUuid'}}};
 
     $parameters{'itemUuid'} = $item{'uuid'};
     $parameters{'question'} = $item{'question'};
@@ -858,7 +845,7 @@ sub deletePage() {
     $parameters{'dueTime'} = $item{'dueTime'};
     $parameters{'interval'} = $item{'interval'};
 
-    &editPage("(Page '$pageToDelete' deleted.)");
+    &editPage("(Group '$groupToDelete' deleted.)");
 }
 
 sub isValidPath() {
@@ -874,7 +861,7 @@ sub isValidPath() {
     return 0;
 }
 
-sub createNewPageFile() {
+sub createNewGroupFile() {
     my ($path) = @_;
     if (! &isValidPath($path)) {
         return 0;
@@ -890,40 +877,40 @@ sub createNewPageFile() {
             }
         }
     }
-    open(NEWPAGE, ">$partPath/$file") || return 0;
-    print NEWPAGE &uuidgen . "\\?\\!\n";
-    close(NEWPAGE);
+    open(NEWGROUP, ">$partPath/$file") || return 0;
+    print NEWGROUP &uuidgen . "\\?\\!\n";
+    close(NEWGROUP);
     return 1;
 }
 
-sub addPage() {
-    my (@pagePaths) = &getAllPagePaths;
-    my ($pageToAdd) = $parameters{'addPagePath'};
+sub addGroup() {
+    my (@groupPaths) = &getAllGroupPaths;
+    my ($groupToAdd) = $parameters{'addGroupPath'};
     my ($message) = '';
-    my ($idx) = &findStringInList($pageToAdd, @pagePaths);
+    my ($idx) = &findStringInList($groupToAdd, @groupPaths);
 
-    if (! &isValidPath($pageToAdd)) {
-        $message = "('$pageToAdd' is not a valid path)";
+    if (! &isValidPath($groupToAdd)) {
+        $message = "('$groupToAdd' is not a valid path)";
     } elsif ($idx >= 0) {
-        $session{'pagePath'} = $pageToAdd;
+        $session{'groupPath'} = $groupToAdd;
         $message = '(exists)';
     } else {
-        if (! &createNewPageFile($pageToAdd)) {
-            $message = "(could not create '$pageToAdd')";
+        if (! &createNewGroupFile($groupToAdd)) {
+            $message = "(could not create '$groupToAdd')";
         } else {
-            $session{'pagePath'} = $pageToAdd;
+            $session{'groupPath'} = $groupToAdd;
             $message = '(added)';
         }
     }
 
-    &readPageFile;
-    $session{'itemUuid'} = $pageUuids[0];
+    &readGroupFile;
+    $session{'itemUuid'} = $groupUuids[0];
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
     $parameters{'session'} = $session{'sessionID'};
     &writeSessionFile;
 
-    %item = %{$page{$session{'itemUuid'}}};
+    %item = %{$group{$session{'itemUuid'}}};
 
     $parameters{'itemUuid'} = $item{'uuid'};
     $parameters{'question'} = $item{'question'};
@@ -955,11 +942,11 @@ sub purgeEmptyFolders() {
     }
 }
 
-sub downloadPages() {
-    my (@pagePaths) = @_;
+sub downloadGroups() {
+    my (@groupPaths) = @_;
     my ($fileName);
-    if ($#pagePaths == 0) {
-        $fileName = $pagePaths[0] . '.mnemo';
+    if ($#groupPaths == 0) {
+        $fileName = $groupPaths[0] . '.mnemo';
     } else {
         $fileName = $parameters{'user'} . '.mnemo';
     }
@@ -967,14 +954,14 @@ sub downloadPages() {
           "Content-type: application/octet-stream; charset=utf-8\n" .
           "Content-disposition: attachment; filename=$fileName\n\n";
     my ($path);
-    foreach $path (@pagePaths) {
+    foreach $path (@groupPaths) {
         print "# $path\n";
         print join("\n", &readLinesFromFile("$opsDir/data/$parameters{'user'}/$path.mnemo"));
         print "\n\n";
     }
 }
 
-sub movePageFile() {
+sub moveGroupFile() {
     my ($fromPath, $toPath) = @_;
     my ($line);
     if (! &isValidPath($toPath)) {
@@ -994,42 +981,42 @@ sub movePageFile() {
     return 1;
 }
 
-sub movePage() {
-    my ($newPagePath) = $parameters{'movePagePath'};
-    my ($oldPagePath) = $session{'pagePath'};
+sub moveGroup() {
+    my ($newGroupPath) = $parameters{'moveGroupPath'};
+    my ($oldGroupPath) = $session{'groupPath'};
     my ($message) = '';
 
-    my (@pagePaths) = &getAllPagePaths;
-    my ($idx) = &findStringInList($oldPagePath, @pagePaths);
+    my (@groupPaths) = &getAllGroupPaths;
+    my ($idx) = &findStringInList($oldGroupPath, @groupPaths);
     if ($idx < 0) {
-        &errorPage("movePage: Page '$oldPagePath' does not exist.");
+        &errorPage("moveGroup: Group '$oldGroupPath' does not exist.");
         exit(1);
     }
 
-    $idx = &findStringInList($newPagePath, @pagePaths);
+    $idx = &findStringInList($newGroupPath, @groupPaths);
 
-    if (! &isValidPath($newPagePath)) {
-        $message = "('$newPagePath' is not a valid path)";
+    if (! &isValidPath($newGroupPath)) {
+        $message = "('$newGroupPath' is not a valid path)";
     } elsif ($idx >= 0) {
-        $session{'pagePath'} = $newPagePath;
+        $session{'groupPath'} = $newGroupPath;
         $message = '(exists)';
     } else {
-        if (! &movePageFile($oldPagePath, $newPagePath)) {
-            $message = "(could not move to '$newPagePath')";
+        if (! &moveGroupFile($oldGroupPath, $newGroupPath)) {
+            $message = "(could not move to '$newGroupPath')";
         } else {
-            $session{'pagePath'} = $newPagePath;
+            $session{'groupPath'} = $newGroupPath;
             $message = '(moved)';
         }
     }
 
-    &readPageFile;
-    $session{'itemUuid'} = $pageUuids[0];
+    &readGroupFile;
+    $session{'itemUuid'} = $groupUuids[0];
     # refresh so the session doesn't expire
     $session{'sessionID'} = time;
     $parameters{'session'} = $session{'sessionID'};
     &writeSessionFile;
 
-    %item = %{$page{$session{'itemUuid'}}};
+    %item = %{$group{$session{'itemUuid'}}};
 
     $parameters{'itemUuid'} = $item{'uuid'};
     $parameters{'question'} = $item{'question'};
@@ -1047,19 +1034,19 @@ sub flipItem() {
         &errorPage("flipItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("flipItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("flipItem: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
     $tmp = $item{'question'};
     $item{'question'} = $item{'answer'};
     $item{'answer'} = $tmp;
 
-    $page{$item{'uuid'}} = {%item};
-    &writePageFile;
+    $group{$item{'uuid'}} = {%item};
+    &writeGroupFile;
 
     $session{'itemUuid'} = $item{'uuid'};
     # refresh so the session doesn't expire
@@ -1083,11 +1070,11 @@ sub duplicateItem() {
         &errorPage("flipItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("flipItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("flipItem: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
     $newItem{'uuid'} = &uuidgen;
@@ -1096,21 +1083,21 @@ sub duplicateItem() {
     $newItem{'dueTime'} = $item{'dueTime'};
     $newItem{'interval'} = $item{'interval'};
 
-    my (@newPageUuids) = ();
-    while ($#pageUuids >= 0) {
-        push(@newPageUuids, shift(@pageUuids));
-        if ($newPageUuids[$#newPageUuids] eq $item{'uuid'}) {
+    my (@newGroupUuids) = ();
+    while ($#groupUuids >= 0) {
+        push(@newGroupUuids, shift(@groupUuids));
+        if ($newGroupUuids[$#newGroupUuids] eq $item{'uuid'}) {
             last;
         }
     }
-    push(@newPageUuids, $newItem{'uuid'});
-    while ($#pageUuids >= 0) {
-        push(@newPageUuids, shift(@pageUuids));
+    push(@newGroupUuids, $newItem{'uuid'});
+    while ($#groupUuids >= 0) {
+        push(@newGroupUuids, shift(@groupUuids));
     }
 
-    $page{$newItem{'uuid'}} = {%newItem};
-    @pageUuids = @newPageUuids;
-    &writePageFile;
+    $group{$newItem{'uuid'}} = {%newItem};
+    @groupUuids = @newGroupUuids;
+    &writeGroupFile;
 
     $session{'itemUuid'} = $newItem{'uuid'};
     # refresh so the session doesn't expire
@@ -1137,43 +1124,43 @@ sub deleteItem() {
         &errorPage("deleteItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
-    %item = %{$page{$session{'itemUuid'}}};
+    &readGroupFile;
+    %item = %{$group{$session{'itemUuid'}}};
     @k = keys(%item);
     if ($#k < 0) {
-        &errorPage("deleteItem: Page='$session{'pagePath'}' Item='$session{'itemUuid'}' NOT FOUND.");
+        &errorPage("deleteItem: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
 
-    my (@newPageUuids) = ();
+    my (@newGroupUuids) = ();
     my ($nextItemUuid) = ();
-    while ($#pageUuids >= 0) {
-        push(@newPageUuids, shift(@pageUuids));
-        if ($newPageUuids[$#newPageUuids] eq $item{'uuid'}) {
+    while ($#groupUuids >= 0) {
+        push(@newGroupUuids, shift(@groupUuids));
+        if ($newGroupUuids[$#newGroupUuids] eq $item{'uuid'}) {
             last;
         }
     }
-    if ($newPageUuids[$#newPageUuids] eq $item{'uuid'}) {
-        pop(@newPageUuids);
-        if ($#pageUuids >= 0) {
-            $nextItemUuid = $pageUuids[0];
-        } elsif ($#newPageUuids >= 0) {
-            $nextItemUuid = $newPageUuids[$#newPageUuids];
+    if ($newGroupUuids[$#newGroupUuids] eq $item{'uuid'}) {
+        pop(@newGroupUuids);
+        if ($#groupUuids >= 0) {
+            $nextItemUuid = $groupUuids[0];
+        } elsif ($#newGroupUuids >= 0) {
+            $nextItemUuid = $newGroupUuids[$#newGroupUuids];
         }
     }
-    while ($#pageUuids >= 0) {
-        push(@newPageUuids, shift(@pageUuids));
+    while ($#groupUuids >= 0) {
+        push(@newGroupUuids, shift(@groupUuids));
     }
 
-    @pageUuids = @newPageUuids;
-    &writePageFile;
+    @groupUuids = @newGroupUuids;
+    &writeGroupFile;
 
     if (length($nextItemUuid) == 0) {
         &addItem;
         return;
     }
 
-    %item = %{$page{$nextItemUuid}};
+    %item = %{$group{$nextItemUuid}};
 
     $session{'itemUuid'} = $item{'uuid'};
     # refresh so the session doesn't expire
@@ -1188,23 +1175,23 @@ sub deleteItem() {
     $parameters{'interval'} = $item{'interval'};
 }
 
-# Create a new blank item and append it to the page.
+# Create a new blank item and append it to the group.
 sub addItem() {
     my (%newItem);
     if ($session{'itemUuid'} ne $parameters{'itemUuid'}) {
         &errorPage("addItem: UUID MISMATCH: editing '$session{'itemUuid'}', saving '$parameters{'itemUuid'}'");
         return;
     }
-    &readPageFile;
+    &readGroupFile;
     $newItem{'uuid'} = &uuidgen;
     $newItem{'question'} = 'Edit this question.';
     $newItem{'answer'} = 'Edit this answer.';
     $newItem{'dueTime'} = 0;
     $newItem{'interval'} = $defaultInterval;
 
-    push(@pageUuids, $newItem{'uuid'});
-    $page{$newItem{'uuid'}} = {%newItem};
-    &writePageFile;
+    push(@groupUuids, $newItem{'uuid'});
+    $group{$newItem{'uuid'}} = {%newItem};
+    &writeGroupFile;
 
     $session{'itemUuid'} = $newItem{'uuid'};
     # refresh so the session doesn't expire
@@ -1276,7 +1263,7 @@ sub writeUserFile() {
 sub readSessionFile() {
     %session = ();
     ($session{'sessionID'},
-     $session{'pagePath'},
+     $session{'groupPath'},
      $session{'itemUuid'},
      $session{'showPage'},
      $session{'response_0'},
@@ -1290,7 +1277,7 @@ sub writeSessionFile() {
     &writeLinesToFile("$opsDir/sessions/$parameters{'user'}",
                       '# Session file line fields are:',
                       '#     sessionID (session init timestamp)',
-                      '#     pagePath',
+                      '#     groupPath',
                       '#     itemUuid',
                       '#     showPage (question, answer, edit)',
                       '#     number of 0 responses',
@@ -1299,7 +1286,7 @@ sub writeSessionFile() {
                       '#     number of 3 responses',
                       '#',
                       $session{'sessionID'},
-                      $session{'pagePath'},
+                      $session{'groupPath'},
                       $session{'itemUuid'},
                       $session{'showPage'},
                       $session{'response_0'},
@@ -1317,7 +1304,7 @@ sub newSession() {
 sub reinitSession() {
     %session = (
         'sessionID' => $parameters{'session'},
-        'pagePath' => '',
+        'groupPath' => '',
         'itemUuid' => '',
         'showPage' => 'question',
         'response_0' => 0,
@@ -1371,13 +1358,13 @@ EndOfReportPage
         foreach $p (`find "$d" -type f -name '*.mnemo' | sort`) {
             chomp($p);
             $p = substr(substr($p, length($d)), 0, -6);
-            $session{'pagePath'} = $p;
+            $session{'groupPath'} = $p;
             if ($#users == 0) {
                 print "    '$p': ";
             }
-            &readPageFile;
+            &readGroupFile;
             ($done, $due, $new, $dueTomorrow) = (0, 0, 0, 0);
-            foreach $i (values(%page)) {
+            foreach $i (values(%group)) {
                 if (0 != $$i{'dueTime'}) {
                     if ($$i{'dueTime'} > $t) {
                         $done++;
@@ -1511,16 +1498,16 @@ sub debugPage() {
         print "    '$k': '$session{$k}'\n";
     }
 
-    print "pageUuids:\n";
-    foreach my $k (@pageUuids) {
+    print "groupUuids:\n";
+    foreach my $k (@groupUuids) {
         print "    '$k'\n";
     }
 
-    print "page:\n";
-    foreach my $k (sort(keys(%page))) {
+    print "group:\n";
+    foreach my $k (sort(keys(%group))) {
         print "    '$k':\n";
-        foreach my $i (sort(keys(%{$page{$k}}))) {
-            print "        '$i' => '${$page{$k}}{$i}'\n";
+        foreach my $i (sort(keys(%{$group{$k}}))) {
+            print "        '$i' => '${$group{$k}}{$i}'\n";
         }
     }
 

@@ -15,12 +15,12 @@ TODO:
    - Implement a password-reset-code URL which can be e-mailed to the user.
    - Add request password reset page and link from login page.
    - Add a page to register as a new user, reset code mailed on approval.
-     (Also add code to getNextDueItem to create a dummy page and item
+     (Also add code to getNextDueItem to create a dummy group and item
       and jump directly to edit mode if there's no data dir for the user.)
  - Add an "Upload" button for uploading data (in downloaded format).
  - Add jumping navigation to edit interface.
    - goto item by index number
-   - goto page by name
+   - goto group by name
  - Add the ability to append small (less than 24k) binary images to question
    and answer as embedded base64 data.  This doesn't work in IE, but works
    in Firefox and Chrome.  Test it on other platforms (like the DSi's Opera).
