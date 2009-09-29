@@ -1,5 +1,6 @@
 
 TODO:
+ - Move interval and dueTime buttons to next line under Save.
  - PORT TO PHP with MySQL.
  - Internationalize the user interface.
  - Change passwords to salted hashes so they're not stored in the clear.
