@@ -562,7 +562,11 @@ Content-type: text/html; charset=utf-8
 <tr><th>QID</th><td><tt>$item{'uuid'}</tt></td></tr>
 </table>
 <table border="0" cellpadding="0" width="100%">
-<tr><td>
+<tr>
+<td>
+<button align="right" type="submit" name="action" value="save">Save</button>
+</td>
+<td align="center">
 <nobr>
 <button type="submit" name="action" value="flip">Flip</button>
 <button type="submit" name="action" value="duplicate">Duplicate</button>
@@ -571,11 +575,9 @@ Content-type: text/html; charset=utf-8
 </nobr>
 </td>
 <td align="right">
-<nobr>
-<button align="right" type="submit" name="action" value="save">Save</button>
 <button align="right" type="submit" name="action" value="quit">Quit editing</button>
-</nobr>
-</td></tr>
+</td>
+</tr>
 </table>
 <table border="0" cellpadding="0" width="100%">
 <tr>
@@ -1576,7 +1578,8 @@ sub uriDecode() {
         }
     }
 
-    return decode('UTF-8', $decoded);
+    #return decode('UTF-8', $decoded);
+    return $decoded;
 }
 
 sub uuidgen() {
