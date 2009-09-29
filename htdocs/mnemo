@@ -970,8 +970,10 @@ sub moveGroupFile() {
         return 0;
     }
     $fromPath = "$opsDir/data/$parameters{'user'}/$fromPath.mnemo";
-    $toPath = "$opsDir/data/$parameters{'user'}/$toPath.mnemo";
     open(FROMPATH, "<$fromPath") || return 0;
+
+    &createNewGroupFile($toPath) || return 0;
+    $toPath = "$opsDir/data/$parameters{'user'}/$toPath.mnemo";
     open(TOPATH, ">$toPath") || return 0;
     while ($line = <FROMPATH>) {
         print TOPATH $line;
