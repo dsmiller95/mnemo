@@ -35,6 +35,12 @@ of the answer-grade buttons.  You can do just a few minutes at a time if
 you like, and at any time whenever you feel like it.  mnemo adapts to
 real-world time because that's how your brain grows.
 
+The basic principle behind mnemo is an accellerating "interval".  Every
+time you get an answer right, mnemo will wait a longer time before showing
+you that question again.  If you get it wrong the interval will be somewhat
+shorter.  Most of the time, you will be getting the answers right and
+accellerating the memories farther and farther into the future.
+
 When creating items, try to make them the smallest amount of information
 which makes sense in the context of the group.  For example, when learning
 a language you should enter vocabulary words as items.  Longer items could
@@ -88,12 +94,25 @@ mid-level exam.  In July of the following year I participated in an
 international conference in Esperanto, passed an advanced-level exam and
 worked as a volunteer translator for an independent film company.
 
+You would hardly guess that I was a terrible student.  I wasn't consistent
+at all.  There were whole weeks when I skipped using mnemo.  I even skipped
+a couple months during that time.  I didn't use mnemo at any regular time,
+just whenever I felt like it.  Sometimes I used mnemo for a fifteen minute
+session and sometimes several times a day for just a few minutes each.
+These were not the habits of a good student.
+
 I have to admit that Esperanto was designed to be easy to learn... but I
 still can't help being amazed that I was able to attain fluent speech and
-literary proficiency in a foreign language in only 18 months.  Many times I
-was complimented on my knowledge of vocabulary, which I learned using
-mnemo.  Being confident about the vocabulary was one of the main reasons
-that I was able to make such rapid progress.
+literacy in a foreign language in only 18 months.  Many times I was
+complimented on my knowledge of vocabulary, which I learned using mnemo.
+Being confident about the vocabulary was one of the main reasons that I was
+able to make such rapid progress.
+
+I use mnemo for some other things too.  I used mnemo to learn the Loraine
+"peg system" for remembering numbers.  That makes it easier to use mnemo
+for learning phone numbers, insurance numbers, birthdays and such.   I also
+learned a small constructed-language called Toki Pona.  In all, I have
+memorized more than 8000 items in the past three and a half years.
 
 
 LICENSE (GNU General Public License)
