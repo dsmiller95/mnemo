@@ -634,9 +634,11 @@ sub saveItem() {
     $item{'question'} = $parameters{'question'};
     $item{'answer'} = $parameters{'answer'};
 
+    # Group file record separators are newlines.  Can't have those.
     $item{'question'} =~ s/\r?\n/<br \/>/mg; # HTML'ize newlines
     $item{'answer'} =~ s/\r?\n/<br \/>/mg; # HTML'ize newlines
 
+    # Group file field separators are backslashes.  Can't have those.
     $item{'question'} =~ s/\\/&92;/g; # HTML'ize backslashes
     $item{'answer'} =~ s/\\/&92;/g; # HTML'ize backslashes
 
