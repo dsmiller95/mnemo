@@ -26,6 +26,9 @@
 
 use Encode qw(encode decode);
 
+#$HTTP_HEADER_FOR_HTTPI = "HTTP/1.0 200 OK\n";
+$HTTP_HEADER_FOR_HTTPI = '';
+
 $minimumSessionDuration = 300; # (5min) prevents user from shutting self out.
 $defaultSessionDuration = 900; # Fifteen minutes.
 
@@ -37,7 +40,8 @@ $maxGroupPathFieldLength = 60;
 $qnaFieldRows = 4;
 $qnaFieldCols = 80;
 
-$opsDir = $ENV{'HOME'} . '/httpi_mnemo/mnemo_ops';
+#$opsDir = $ENV{'HOME'} . '/httpi_mnemo/mnemo_ops';
+$opsDir = '/usr/lib/cgi-bin/mnemo_ops';
 
 $HOUR = 3600;
 $DAY = $HOUR * 24;
@@ -385,8 +389,8 @@ sub questionPage() {
         $editButton = '<button name="action" value="edit" type="submit">Edit mode</button><br />';
     }
 
+    print $HTTP_HEADER_FOR_HTTPI;
     print <<"EndOfQuestionPage";
-HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
 <html>
@@ -482,8 +486,8 @@ sub answerPage() {
         $editButton = '<button name="action" value="edit" type="submit">Edit mode</button><br />';
     }
 
+    print $HTTP_HEADER_FOR_HTTPI;
     print <<"EndOfAnswerPage";
-HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
 <html>
@@ -540,9 +544,8 @@ sub editPage() {
         }
     }
 
+    print $HTTP_HEADER_FOR_HTTPI;
     print <<"EndOfEditPage";
-
-HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
 <html>
@@ -964,8 +967,8 @@ sub downloadGroups() {
     } else {
         $fileName = $parameters{'user'} . '.mnemo';
     }
-    print "HTTP/1.0 200 OK\n" .
-          "Content-type: application/octet-stream; charset=utf-8\n" .
+    print $HTTP_HEADER_FOR_HTTPI;
+    print "Content-type: application/octet-stream; charset=utf-8\n" .
           "Content-disposition: attachment; filename=$fileName\n\n";
     my ($path);
     foreach $path (@groupPaths) {
@@ -1348,11 +1351,9 @@ sub reportPage() {
         closedir($dh);
     }
 
-    print <<'EndOfReportPage';
-HTTP/1.0 200 ok
-Content-Type: text/plain
+    print $HTTP_HEADER_FOR_HTTPI;
+    print "Content-Type: text/plain\n\n";
 
-EndOfReportPage
     my ($d, $p, $u, $i, $t, $tt);
     my ($done, $due, $new, $dueTomorrow);
     my ($t_done, $t_due, $t_new, $t_dueTomorrow);
@@ -1419,8 +1420,8 @@ sub passwordPage() {
     &newSession;
     &writeSessionFile;
 
+    print $HTTP_HEADER_FOR_HTTPI;
     print <<"EndOfPasswordPage";
-HTTP/1.1 200 ok
 Refresh: 0; url=mnemo?user=$parameters{'user'}&session=$parameters{'session'}
 Content-Type: text/html; charset=utf-8
 
@@ -1436,8 +1437,8 @@ EndOfPasswordPage
 
 sub loginPage() {
     my ($msg) = @_;
+    print $HTTP_HEADER_FOR_HTTPI;
     print <<"EndOfLoginPage";
-HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
 <html>
@@ -1473,8 +1474,8 @@ sub finishedPage() {
         }
     }
 
+    print $HTTP_HEADER_FOR_HTTPI;
     print <<"EndOfFinishedPage";
-HTTP/1.0 200 OK
 Content-type: text/html; charset=utf-8
 
 <html>
@@ -1501,7 +1502,8 @@ sub errorPage() {
 sub debugPage() {
     my ($message) = @_;
 
-    print "HTTP/1.0 200 OK\nContent-type: text/plain; charset=utf-8\n\n";
+    print $HTTP_HEADER_FOR_HTTPI;
+    print "Content-type: text/plain; charset=utf-8\n\n";
 
     print "$message\n\n";
 

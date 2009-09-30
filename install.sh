@@ -1,4 +1,5 @@
 #!/bin/bash
 
-cp htdocs/mnemo ~/httpi_mnemo/htdocs/
+# I use `cat` to avoid changing ownership of the target file.
+cat cgi-bin/mnemo > /usr/lib/cgi-bin/mnemo
 
