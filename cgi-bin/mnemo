@@ -3,6 +3,8 @@
 
 # mnemo is a memory accellerator.
 #
+# (See "README" and "gpl.txt".)
+#
 # This implementation is written to use a subset of CGI
 # and to store all data as files and directories.
 
@@ -501,10 +503,13 @@ $session{'groupPath'}
 <tr><td>$item{'question'}</td></tr>
 <tr><td>$item{'answer'}</td></tr>
 </table>
-<button type="submit" name="response" value="0">Huh?</button>
-<button type="submit" name="response" value="1">No</button>
+<nobr>
+<button type="submit" name="response" value="3">Yes!</button>
 <button type="submit" name="response" value="2">Slow</button>
-<button type="submit" name="response" value="3">Yes!</button><br />
+<button type="submit" name="response" value="1">No</button>
+<button type="submit" name="response" value="0">Huh?</button>
+</nobr>
+<br />
 Interval for this item: $interval<br />
 Session: $sessionDuration<br />
 $editButton
