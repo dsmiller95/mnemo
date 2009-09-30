@@ -34,8 +34,10 @@ $HTTP_HEADER_FOR_HTTPI = '';
 $minimumSessionDuration = 300; # (5min) prevents user from shutting self out.
 $defaultSessionDuration = 900; # Fifteen minutes.
 
+# Note, the default interval for new items should be the minimum interval
+# because otherwise the user may be confused with newer items crowding out
+# the ones which are giving them trouble.
 $minimumInterval = 60; # one minute
-$defaultInterval = 600; # ten minutes
 
 $maxGroupPathFieldLength = 60;
 
@@ -208,7 +210,7 @@ sub readGroupFile() {
         if (($uuid, $question, $answer, $interval, $dueTime) =
                 split(/\\/, $line)) {
             if (0 == $interval) {
-                $interval = $defaultInterval;
+                $interval = $minimumInterval;
             } elsif ($minimumInterval > $interval) {
                 $interval = $minimumInterval;
             }
@@ -710,7 +712,7 @@ sub makeNew() {
         &errorPage("saveItem: Group='$session{'groupPath'}' Item='$session{'itemUuid'}' NOT FOUND.");
         return;
     }
-    $item{'interval'} = $defaultInterval;
+    $item{'interval'} = $minimumInterval;
     $item{'dueTime'} = '0';
 
     $group{$session{'itemUuid'}} = {%item};
@@ -1211,7 +1213,7 @@ sub addItem() {
     $newItem{'question'} = 'Edit this question.';
     $newItem{'answer'} = 'Edit this answer.';
     $newItem{'dueTime'} = 0;
-    $newItem{'interval'} = $defaultInterval;
+    $newItem{'interval'} = $minimumInterval;
 
     push(@groupUuids, $newItem{'uuid'});
     $group{$newItem{'uuid'}} = {%newItem};
