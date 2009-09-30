@@ -26,11 +26,11 @@
 
 use Encode qw(encode decode);
 
-$minimumSessionDuration = 5 * 60; # prevents user from shutting self out.
-$defaultSessionDuration = 15 * 60; # Fifteen minutes.
+$minimumSessionDuration = 300; # (5min) prevents user from shutting self out.
+$defaultSessionDuration = 900; # Fifteen minutes.
 
-$minimumInterval = 60;
-$defaultInterval = 60;
+$minimumInterval = 60; # one minute
+$defaultInterval = 600; # ten minutes
 
 $maxGroupPathFieldLength = 60;
 
