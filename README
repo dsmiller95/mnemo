@@ -72,11 +72,13 @@ learning new items again.
 
 INSTALLING MNEMO
 
-This version of "mnemo" is intended for use with "httpi", but it's
-basically a CGI program so it might work with other web servers.
+"mnemo" was originally intended for use with "HTTPi", but it's
+basically a CGI program so it was changed to work with Apache2.
+(HTTPi scripts are expected to print the "HTTP 1.0 200 OK" line
+immediately before the usual "Content-type:" header.)
 
 The $opsDir variable near the beginning of the "htdocs/mnemo" file
-would need to be set to point to some directory to use as your
+should be set to point to some directory to use as your
 local "mnemo_ops".  See the included "mnemo_ops" directory for a
 template of what should be found there.  Your "mnemo_ops" directory
 must be writable for the UID under which the CGI program will run.
