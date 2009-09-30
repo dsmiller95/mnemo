@@ -1503,7 +1503,13 @@ EndOfFinishedPage
 
 sub errorPage() {
     my ($message) = @_;
-    &debugPage('ERROR: ' . $message);
+
+    # &debugPage('ERROR: ' . $message);
+
+    print $HTTP_HEADER_FOR_HTTPI;
+    print "Content-type: text/plain; charset=utf-8\n\n";
+
+    print "$message\n\n";
 }
 
 sub debugPage() {
