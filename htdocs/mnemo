@@ -557,8 +557,8 @@ Content-type: text/html; charset=utf-8
 <table border="1" cellpadding="5">
 <tr><th>Question</th><td>$item{'question'}<br /><textarea name="question" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'question'}</textarea></td></tr>
 <tr><th>Answer</th><td>$item{'answer'}<br /><textarea name="answer" rows="$qnaFieldRows" cols="$qnaFieldCols">$item{'answer'}</textarea></td></tr>
-<tr><th>Interval</th><td>$intervalStr <button type="submit" name="action" value="setIntervalMinute">1 minute</button> <button type="submit" name="action" value="setIntervalHour">1 hour</button> <button type="submit" name="action" value="setIntervalDay">1 day</button></td></tr>
-<tr><th>Due Time</th><td>$dueTimeStr $makeDueButton $makeNewButton</td></tr>
+<tr><th>Interval</th><td>$intervalStr</td></tr>
+<tr><th>Due Time</th><td>$dueTimeStr</td></tr>
 <tr><th>QID</th><td><tt>$item{'uuid'}</tt></td></tr>
 </table>
 <table border="0" cellpadding="0" width="100%">
@@ -581,6 +581,16 @@ Content-type: text/html; charset=utf-8
 </table>
 <table border="0" cellpadding="0" width="100%">
 <tr>
+<td>$makeDueButton $makeNewButton</td>
+<td align="right"><nobr>Set interval to
+<button type="submit" name="action" value="setIntervalMinute">1 minute</button>
+<button type="submit" name="action" value="setIntervalHour">1 hour</button>
+<button type="submit" name="action" value="setIntervalDay">1 day</button>
+</nobr></td>
+</tr>
+</table>
+<table border="0" cellpadding="0" width="100%">
+<tr>
 <td width="33%"><button type="submit" name="action" value="prevGroup">|&lt;&lt;-- Previous group</button></td>
 <td width="33%" align="center">
 <nobr>
@@ -591,7 +601,7 @@ Content-type: text/html; charset=utf-8
 <td width="33%" align="right"><button type="submit" name="action" value="nextGroup">Next group --&gt;&gt;|</button></td>
 </tr>
 </table>
-</table>
+</td></tr></table>
 <!-- <button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"> -->
 <!-- <button type="submit" name="action" value="gotoGroup">Go to group:</button><input type="text" name="groupPath" size="$maxGroupPathFieldLength"> -->
 <nobr>
@@ -1434,11 +1444,12 @@ Content-type: text/html; charset=utf-8
 <head><title>Mnemo</title></head>
 <body bgcolor="#ffffff">
 <form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
-$msg<br />
-user <input type="text" name="user" value="$parameters{'user'}" /> <br />
-password <input type="password" name="password" /> <br />
-<input type="submit" value="Log in" />
-<button name="report" value="1" type="submit">Generate report</button>
+<table border=0>
+<tr><td>$msg</td></tr>
+<tr><td align="right">user <input type="text" name="user" value="$parameters{'user'}" /></td></tr>
+<tr><td align="right">password <input type="password" name="password" /></td></tr>
+<tr><td align="right"><input type="submit" value="Log in" /></td></tr>
+</table>
 </form>
 </body>
 </html>
