@@ -26,7 +26,7 @@
 # If the item doesn't have a dueTime, it is ignored until no other
 #   items in the group are due.
 
-use Encode qw(encode decode);
+# use Encode qw(encode decode);
 
 #$HTTP_HEADER_FOR_HTTPI = "HTTP/1.0 200 OK\n";
 $HTTP_HEADER_FOR_HTTPI = '';
@@ -224,12 +224,14 @@ sub readGroupFile() {
             };
         }
     }
+    $groupHtmlHeader = $fileHeaderLines[1];
 }
 
 sub writeGroupFile() {
     my ($tmp);
     open(GROUP, ">$opsDir/data/$parameters{'user'}/$session{'groupPath'}.mnemo");
     print GROUP "# $session{'groupPath'}\n";
+    print GROUP "# $groupHtmlHeader\n";
     foreach my $uuid (@groupUuids) {
         %tmp = %{$group{$uuid}};
         print GROUP join('\\', $tmp{'uuid'}, $tmp{'question'},
@@ -398,7 +400,10 @@ sub questionPage() {
 Content-type: text/html; charset=utf-8
 
 <html>
-<head><title>Mnemo</title></head>
+<head><title>Mnemo</title>
+$user{'htmlHeader'}
+$groupHtmlHeader
+</head>
 <body bgcolor="#ffffff">
 <form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="user" value="$parameters{'user'}">
@@ -495,7 +500,10 @@ sub answerPage() {
 Content-type: text/html; charset=utf-8
 
 <html>
-<head><title>Mnemo</title></head>
+<head><title>Mnemo</title>
+$user{'htmlHeader'}
+$groupHtmlHeader
+</head>
 <body bgcolor="#ffffff">
 <form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="user" value="$parameters{'user'}">
@@ -556,7 +564,10 @@ sub editPage() {
 Content-type: text/html; charset=utf-8
 
 <html>
-<head><title>Mnemo</title></head>
+<head><title>Mnemo</title>
+$user{'htmlHeader'}
+$groupHtmlHeader
+</head>
 <body bgcolor="#ffffff">
 <form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
 <input type="hidden" name="user" value="$parameters{'user'}">
@@ -1247,10 +1258,18 @@ sub userSessionDuration() {
 sub readLinesFromFile() {
     my ($path) = @_;
 
+    # @fileHeaderLines is a global which gets set by this routine.
+    @fileHeaderLines = ();
+
     open(INFILE, "<$path");
     my (@lines) = <INFILE>;
     close(INFILE);
     chomp(@lines);
+
+    while (($#lines >= 0) && ($lines[0] =~ /^\#/)) {
+        push(@fileHeaderLines, shift(@lines));
+        $fileHeaderLines[$#fileHeaderLines] =~ s/^\#\s*//;
+    }
 
     return(grep(/(^$)|(^[^\#])/, @lines));
 }
@@ -1267,7 +1286,8 @@ sub readUserFile() {
     ($user{'password'},
      $user{'sessionDuration'},
      $user{'width'},
-     $user{'showEdit'}
+     $user{'showEdit'},
+     $user{'htmlHeader'}
     ) = &readLinesFromFile("$opsDir/users/$parameters{'user'}");
 }
 
@@ -1282,7 +1302,8 @@ sub writeUserFile() {
                       $user{'password'},
                       $user{'sessionDuration'},
                       $user{'width'},
-                      $user{'showEdit'}
+                      $user{'showEdit'},
+                      $user{'htmlHeader'}
                      );
 }
 
