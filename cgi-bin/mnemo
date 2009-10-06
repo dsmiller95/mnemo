@@ -203,12 +203,23 @@ sub main() {
 sub readGroupFile() {
     my ($line, $uuid, $question, $answer, $interval, $dueTime);
 
+    my ($flagForWrite) = 0;
     %group = ();
     @groupUuids = (); # (this is for keeping them in order in the file)
     foreach $line (&readLinesFromFile("$opsDir/data/$parameters{'user'}/$session{'groupPath'}.mnemo")) {
         chomp($line);
         if (($uuid, $question, $answer, $interval, $dueTime) =
                 split(/\\/, $line)) {
+            if ((! defined($answer)) &&
+                defined($uuid) &&
+                defined($question) &&
+                ($uuid !~ /^\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12}$/)) {
+                # uuid missing.  it's just a bare question-answer pair.
+                $answer = $question;
+                $question = $uuid;
+                $uuid = &uuidgen;
+                $flagForWrite++;
+            }
             if (0 == $interval) {
                 $interval = $minimumInterval;
             } elsif ($minimumInterval > $interval) {
@@ -225,6 +236,12 @@ sub readGroupFile() {
         }
     }
     $groupHtmlHeader = $fileHeaderLines[1];
+
+    if ($flagForWrite > 0) {
+        # Some items needed uuid's to be generated.
+        # Store them so we don't have to do it again.
+        &writeGroupFile;
+    }
 }
 
 sub writeGroupFile() {
@@ -913,7 +930,7 @@ sub createNewGroupFile() {
         }
     }
     open(NEWGROUP, ">$partPath/$file") || return 0;
-    print NEWGROUP &uuidgen . "\\?\\!\n";
+    print NEWGROUP &uuidgen . "\\\\\n";
     close(NEWGROUP);
     return 1;
 }
@@ -1221,8 +1238,8 @@ sub addItem() {
     }
     &readGroupFile;
     $newItem{'uuid'} = &uuidgen;
-    $newItem{'question'} = 'Edit this question.';
-    $newItem{'answer'} = 'Edit this answer.';
+    $newItem{'question'} = '';
+    $newItem{'answer'} = '';
     $newItem{'dueTime'} = 0;
     $newItem{'interval'} = $minimumInterval;
 
