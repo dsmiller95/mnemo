@@ -1,8 +1,6 @@
 
 TODO:
- - Move interval and dueTime buttons to next line under Save.
  - PORT TO PHP with MySQL.
- - Internationalize the user interface.
  - Change passwords to salted hashes so they're not stored in the clear.
  - Add user profile editing page for
    - password
@@ -11,6 +9,9 @@ TODO:
    - showEdit
    - language
    - (email?)
+ - Implement pick-group-from-list-of-links page for edit mode.
+ - Implement multi-item edit form (groups of 10/25/50 items?).
+ - Internationalize the user interface.
  - Add an interface to help users who can't log in.
    - Add email to user profile.
    - Implement a password-reset-code URL which can be e-mailed to the user.
@@ -18,19 +19,15 @@ TODO:
    - Add a page to register as a new user, reset code mailed on approval.
      (Also add code to getNextDueItem to create a dummy group and item
       and jump directly to edit mode if there's no data dir for the user.)
- - Add an "Upload" button for uploading data (in downloaded format).
- - Add jumping navigation to edit interface.
-   - goto item by index number
-   - goto group by name
+ - Add an "Upload" button for uploading item data (in downloaded format).
+
+MAYBE/WISH LIST:
+ - Log session response summaries. (Rolling log?)
+ - Add a "Search" interface (group names, item content).
+ - Allow users to add multimedia objects (pic, sound, video) to items.
+   (Look into those editor widgets used on various blogs.)
  - Add the ability to append small (less than 24k) binary images to question
    and answer as embedded base64 data.  This doesn't work in IE, but works
    in Firefox and Chrome.  Test it on other platforms (like the DSi's Opera).
    See the example "embedded_image.html" file in the sample_data dir.
-
-MAYBE/WISH LIST:
- - Log session response summaries. (Rolling log?)
- - Remove shell calls `find`, `uuidgen` (and `pwd`).
- - Add a "Search" interface.
- - Allow users to add multimedia objects (pic, sound, video) to items.
-   (Look into those editor widgets used on various blogs.)
 
