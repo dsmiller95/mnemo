@@ -39,7 +39,7 @@ $defaultSessionDuration = 900; # Fifteen minutes.
 # the ones which are giving them trouble.
 $minimumInterval = 60; # one minute
 
-$maxGroupPathFieldLength = 60;
+$groupPathFieldLength = 60;
 
 $qnaFieldRows = 4;
 $qnaFieldCols = 80;
@@ -640,15 +640,13 @@ $groupHtmlHeader
 </tr>
 </table>
 </td></tr></table>
-<!-- <button type="submit" name="action" value="gotoItem">Go to item #:</button><input type="text" name="itemIdx"> -->
-<!-- <button type="submit" name="action" value="gotoGroup">Go to group:</button><input type="text" name="groupPath" size="$maxGroupPathFieldLength"> -->
 <nobr>
-<button type="submit" name="action" value="moveGroup">Rename this group:</button><input type="text" name="moveGroupPath" value="$session{'groupPath'}" size="$maxGroupPathFieldLength">
+<button type="submit" name="action" value="moveGroup">Rename this group:</button><textarea name="moveGroupPath" rows="1" cols="$groupPathFieldLength">$session{'groupPath'}</textarea>
 </nobr>
 <br />
 <nobr>
 <button type="submit" name="action" value="addGroup">Add new group:</button>
-<input type="text" name="addGroupPath" size="$maxGroupPathFieldLength">
+<textarea name="addGroupPath" rows="1" cols="$groupPathFieldLength"></textarea>
 </nobr>
 <br />
 <button type="submit" name="action" value="deleteGroup">Delete this group</button>
