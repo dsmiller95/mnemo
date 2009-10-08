@@ -97,7 +97,7 @@ sub main() {
     # If they don't know the current session ID, then kick them back
     # to the login page.  This will not interrupt a legitimate session
     # unless they successfully log in.
-    if ($session{'sessionID'} != $parameters{'session'}) {
+    if ($session{'sessionStart'} != $parameters{'session'}) {
         &loginPage;
         return;
     }
@@ -106,7 +106,7 @@ sub main() {
 
     # This makes it a little more secure, and lets the user get
     # a sense of accomplishment at the end of their session.
-    if ((time - $session{'sessionID'}) > &userSessionDuration) {
+    if ((time - $session{'sessionStart'}) > &userSessionDuration) {
         &finishedPage;
         return;
     }
@@ -692,9 +692,9 @@ sub saveItem() {
     &writeGroupFile;
 
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
+    $session{'sessionStart'} = time;
     &writeSessionFile;
-    $parameters{'session'} = $session{'sessionID'};
+    $parameters{'session'} = $session{'sessionStart'};
 }
 
 sub setInterval() {
@@ -718,9 +718,9 @@ sub setInterval() {
     &writeGroupFile;
 
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
+    $session{'sessionStart'} = time;
     &writeSessionFile;
-    $parameters{'session'} = $session{'sessionID'};
+    $parameters{'session'} = $session{'sessionStart'};
 
     &editPage('(interval set)');
 }
@@ -745,9 +745,9 @@ sub makeNew() {
     &writeGroupFile;
 
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
+    $session{'sessionStart'} = time;
     &writeSessionFile;
-    $parameters{'session'} = $session{'sessionID'};
+    $parameters{'session'} = $session{'sessionStart'};
 
     &editPage('(made new)');
 }
@@ -771,9 +771,9 @@ sub makeDueNow() {
     &writeGroupFile;
 
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
+    $session{'sessionStart'} = time;
     &writeSessionFile;
-    $parameters{'session'} = $session{'sessionID'};
+    $parameters{'session'} = $session{'sessionStart'};
 
     &editPage('(made due now)');
 }
@@ -809,8 +809,8 @@ sub gotoPrevNextItem() {
     $session{'itemUuid'} = $groupUuids[$idx];
 
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     %item = %{$group{$session{'itemUuid'}}};
@@ -844,8 +844,8 @@ sub gotoPrevNextGroup() {
     &readGroupFile;
     $session{'itemUuid'} = $groupUuids[0];
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     %item = %{$group{$session{'itemUuid'}}};
@@ -883,8 +883,8 @@ sub deleteGroup() {
     &readGroupFile;
     $session{'itemUuid'} = $groupUuids[0];
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     %item = %{$group{$session{'itemUuid'}}};
@@ -956,8 +956,8 @@ sub addGroup() {
     &readGroupFile;
     $session{'itemUuid'} = $groupUuids[0];
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     %item = %{$group{$session{'itemUuid'}}};
@@ -1064,8 +1064,8 @@ sub moveGroup() {
     &readGroupFile;
     $session{'itemUuid'} = $groupUuids[0];
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     %item = %{$group{$session{'itemUuid'}}};
@@ -1102,8 +1102,8 @@ sub flipItem() {
 
     $session{'itemUuid'} = $item{'uuid'};
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     $parameters{'itemUuid'} = $item{'uuid'};
@@ -1153,8 +1153,8 @@ sub duplicateItem() {
 
     $session{'itemUuid'} = $newItem{'uuid'};
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     %item = %newItem;
@@ -1216,8 +1216,8 @@ sub deleteItem() {
 
     $session{'itemUuid'} = $item{'uuid'};
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     $parameters{'itemUuid'} = $item{'uuid'};
@@ -1247,8 +1247,8 @@ sub addItem() {
 
     $session{'itemUuid'} = $newItem{'uuid'};
     # refresh so the session doesn't expire
-    $session{'sessionID'} = time;
-    $parameters{'session'} = $session{'sessionID'};
+    $session{'sessionStart'} = time;
+    $parameters{'session'} = $session{'sessionStart'};
     &writeSessionFile;
 
     %item = %newItem;
@@ -1324,21 +1324,22 @@ sub writeUserFile() {
 
 sub readSessionFile() {
     %session = ();
-    ($session{'sessionID'},
+    ($session{'sessionStart'},
      $session{'groupPath'},
      $session{'itemUuid'},
      $session{'showPage'},
      $session{'response_0'},
      $session{'response_1'},
      $session{'response_2'},
-     $session{'response_3'}
+     $session{'response_3'},
+     $session{'sessionEnd'}
     ) = &readLinesFromFile("$opsDir/sessions/$parameters{'user'}");
 }
 
 sub writeSessionFile() {
     &writeLinesToFile("$opsDir/sessions/$parameters{'user'}",
                       '# Session file line fields are:',
-                      '#     sessionID (session init timestamp)',
+                      '#     sessionStart (session init timestamp)',
                       '#     groupPath',
                       '#     itemUuid',
                       '#     showPage (question, answer, edit)',
@@ -1346,15 +1347,17 @@ sub writeSessionFile() {
                       '#     number of 1 responses',
                       '#     number of 2 responses',
                       '#     number of 3 responses',
+                      '#     sessionEnd (timestamp of last answer)',
                       '#',
-                      $session{'sessionID'},
+                      $session{'sessionStart'},
                       $session{'groupPath'},
                       $session{'itemUuid'},
                       $session{'showPage'},
                       $session{'response_0'},
                       $session{'response_1'},
                       $session{'response_2'},
-                      $session{'response_3'}
+                      $session{'response_3'},
+                      time() # $session{'sessionEnd'}
                      );
 }
 
@@ -1365,14 +1368,15 @@ sub newSession() {
 
 sub reinitSession() {
     %session = (
-        'sessionID' => $parameters{'session'},
+        'sessionStart' => $parameters{'session'},
         'groupPath' => '',
         'itemUuid' => '',
         'showPage' => 'question',
         'response_0' => 0,
         'response_1' => 0,
         'response_2' => 0,
-        'response_3' => 0
+        'response_3' => 0,
+        'sessionEnd' => time()
     );
 }
 
@@ -1406,12 +1410,18 @@ sub reportPage() {
         $parameters{'user'} = $u;
         &readSessionFile;
         print "'$u'" .
-              ' ' . &timeToStr($session{'sessionID'}) .
-              " ($session{'response_0'}," .
-              "$session{'response_1'}," .
-              "$session{'response_2'}," .
-              "$session{'response_3'})" .
-              ":\n";
+              ' ' . &timeToStr($session{'sessionStart'}) .
+              ' (' .
+              $session{'response_3'} . ',' .
+              $session{'response_2'} . ',' .
+              $session{'response_1'} . ',' .
+              $session{'response_0'} . ' = ' .
+              ($session{'response_3'} + $session{'response_2'} +
+                $session{'response_1'} + $session{'response_0'}) .
+              ' items in ' .
+              &prettyInterval($session{'sessionEnd'} -
+                              $session{'sessionStart'}) .
+              "):\n";
 
         ($t_done, $t_due, $t_new, $t_dueTomorrow) = (0, 0, 0, 0);
         $d = "$opsDir/data/$u/";
