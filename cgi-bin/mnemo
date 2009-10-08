@@ -52,6 +52,7 @@ $DAY = $HOUR * 24;
 $WEEK = $DAY * 7;
 $YEAR = $DAY * 365.25;
 $MONTH = $YEAR / 12.0;
+$DECADE = $YEAR * 10;
 
 @dayOfWeek = ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat');
 
@@ -453,20 +454,28 @@ sub userWidthTerm() {
 sub prettyInterval() {
     my ($d) = @_;
 
-    if ($d > (2 * $YEAR)) {
-        return int($d / $YEAR) . ' years';
+    my ($p) = '';
+    if ($d < 0) {
+        $p = 'negative ';
+        $d = 0 - $d;
+    }
+
+    if ($d > (2 * $DECADE)) {
+        return $p . int($d / $DECADE) . ' decades';
+    } elsif ($d > (2 * $YEAR)) {
+        return $p . int($d / $YEAR) . ' years';
     } elsif ($d > (2 * $MONTH)) {
-        return int($d / $MONTH) . ' months';
+        return $p . int($d / $MONTH) . ' months';
     } elsif ($d > (2 * $WEEK)) {
-        return int($d / $WEEK) . ' weeks';
+        return $p . int($d / $WEEK) . ' weeks';
     } elsif ($d > (2 * $DAY)) {
-        return int($d / $DAY) . ' days';
+        return $p . int($d / $DAY) . ' days';
     } elsif ($d > (2 * $HOUR)) {
-        return int($d / $HOUR) . ' hours';
+        return $p . int($d / $HOUR) . ' hours';
     } elsif ($d > 120) {
-        return int($d / 60) . ' minutes';
+        return $p . int($d / 60) . ' minutes';
     } else {
-        return "$d seconds";
+        return $p . "$d seconds";
     }
 }
 
