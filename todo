@@ -10,6 +10,8 @@ TODO:
    - language
    - (email?)
  - Implement pick-group-from-list-of-links page for edit mode.
+ - Implement group-file upload.
+ - Implement "expert" raw-data edit mode for group files.
  - Implement multi-item edit form (groups of 10/25/50 items?).
  - Internationalize the user interface.
  - Add an interface to help users who can't log in.
@@ -19,7 +21,6 @@ TODO:
    - Add a page to register as a new user, reset code mailed on approval.
      (Also add code to getNextDueItem to create a dummy group and item
       and jump directly to edit mode if there's no data dir for the user.)
- - Add an "Upload" button for uploading item data (in downloaded format).
 
 MAYBE/WISH LIST:
  - Log session response summaries. (Rolling log?)

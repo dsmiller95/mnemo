@@ -1408,7 +1408,10 @@ sub reportPage() {
     }
 
     print $HTTP_HEADER_FOR_HTTPI;
-    print "Content-Type: text/plain\n\n";
+    print "Content-Type: text/html; charset=utf-8\n\n";
+
+    print "<html><head><title>Mnemo report</title></head>\n";
+    print "<body bgcolor=\"#ffffff\"><pre>\n";
 
     my ($d, $p, $u, $i, $t, $tt);
     my ($done, $due, $new, $dueTomorrow);
@@ -1468,6 +1471,7 @@ sub reportPage() {
         print '    TOTALS: ' .
               "$t_new new, $t_due due, $t_done done ($t_dueTomorrow due tomorrow).\n";
     }
+    print "</pre></body></html>\n";
 }
 
 sub passwordPage() {
