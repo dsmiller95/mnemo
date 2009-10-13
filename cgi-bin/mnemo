@@ -207,15 +207,18 @@ sub readGroupFile() {
     my ($flagForWrite) = 0;
     %group = ();
     @groupUuids = (); # (this is for keeping them in order in the file)
-    foreach $line (&readLinesFromFile("$opsDir/data/$parameters{'user'}/$session{'groupPath'}.mnemo")) {
+    my (@fileLines) = &readLinesFromFile("$opsDir/data/$parameters{'user'}/$session{'groupPath'}.mnemo");
+    while ($#fileLines >= 0) {
+        $line = shift(@fileLines);
         chomp($line);
         if (($uuid, $question, $answer, $interval, $dueTime) =
                 split(/\\/, $line)) {
-            if ((! defined($answer)) &&
-                defined($uuid) &&
-                defined($question) &&
-                ($uuid !~ /^\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12}$/)) {
-                # uuid missing.  it's just a bare question-answer pair.
+            if ($uuid !~ /^\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12}$/) {
+                # uuid missing.  Assume it's a bare question-answer pair.
+                # An optional "r" in the third field means "reversible".
+                if ($answer =~ /^r/) {
+                    unshift(@fileLines, "$question\\$uuid");
+                }
                 $answer = $question;
                 $question = $uuid;
                 $uuid = &uuidgen;
