@@ -784,14 +784,14 @@ $msg
 </tr>
 <tr>
 <td align="right" valign="top"><strong>Session Duration:</strong><br />
-    (seconds; 0 means default)</td>
-<td>$user{'sessionDuration'} ($prettyDur)<br />
-    <input type="text" name="sessionDuration" value="$user{'sessionDuration'}" /></td>
+    (0 means default)</td>
+<td>$prettyDur<br />
+    <nobr><input type="text" name="sessionDuration" value="$user{'sessionDuration'}" /> seconds</nobr></td>
 </tr>
 <tr>
 <td align="right"><strong>Screen Width:</strong><br />
-    (pixels; 0 means full-width)</td>
-<td><input type="text" name="width" value="$user{'width'}" /></td>
+    (0 means full-width)</td>
+<td><nobr><input type="text" name="width" value="$user{'width'}" /> pixels</nobr></td>
 </tr>
 <tr>
 <td>&nbsp;</td>
