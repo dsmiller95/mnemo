@@ -1689,6 +1689,7 @@ Content-type: text/html; charset=utf-8
 <tr><td align="right"><input type="submit" value="Log in" /></td></tr>
 </table>
 </form>
+<p>If you would like a user account, send an e-mail to <a href="mailto:rdmiller3\@gmail.com">Rick Miller &lt;rdmiller3\@gmail.com&gt;</a> and ask for one.</p>
 </body>
 </html>
 EndOfLoginPage
