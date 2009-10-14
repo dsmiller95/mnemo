@@ -737,6 +737,11 @@ sub saveItem() {
 sub preferencesPage() {
     my ($msg) = @_;
 
+    # refresh so the session doesn't expire
+    $session{'sessionStart'} = time;
+    &writeSessionFile;
+    $parameters{'session'} = $session{'sessionStart'};
+
     my ($prettyDur) = &prettyInterval(&userSessionDuration);
     if (&userSessionDuration != $user{'sessionDuration'}) {
         $prettyDur = 'defaults to ' . $prettyDur;
