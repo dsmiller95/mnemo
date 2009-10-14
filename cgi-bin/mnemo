@@ -112,7 +112,22 @@ sub main() {
         return;
     }
 
-    if ($session{'showPage'} eq 'edit') {
+    if ($session{'showPage'} eq 'preferences') {
+        if ($parameters{'action'} eq 'save') {
+            &savePreferences;
+            # falls through to go back to question page
+        }
+        # (this allows for an action eq "cancel")
+        if (defined($parameters{'action'})) {
+            %item = ();
+            $session{'itemUuid'} = '';
+            $session{'showPage'} = 'question';
+            &writeSessionFile;
+            &questionPage;
+        } else {
+            &preferencesPage;
+        }
+    } elsif ($session{'showPage'} eq 'edit') {
         if ($parameters{'action'} eq 'quit') {
             %item = ();
             $session{'itemUuid'} = '';
@@ -171,7 +186,11 @@ sub main() {
             &editPage;
         }
     } elsif ($session{'showPage'} eq 'answer') {
-        if ($parameters{'action'} eq 'edit') {
+        if ($parameters{'action'} eq 'preferences') {
+            $session{'showPage'} = 'preferences';
+            &writeSessionFile;
+            &preferencesPage
+        } elsif ($parameters{'action'} eq 'edit') {
             $session{'showPage'} = 'edit';
             &writeSessionFile;
             &editPage
@@ -187,7 +206,11 @@ sub main() {
         }
     } else {
         # assuming ($session{'showPage'} eq 'question')
-        if ($parameters{'action'} eq 'edit') {
+        if ($parameters{'action'} eq 'preferences') {
+            $session{'showPage'} = 'preferences';
+            &writeSessionFile;
+            &preferencesPage
+        } elsif ($parameters{'action'} eq 'edit') {
             $session{'showPage'} = 'edit';
             &writeSessionFile;
             &editPage
@@ -413,7 +436,7 @@ sub questionPage() {
     my ($widthTerm) = &userWidthTerm;
     my ($editButton) = '';
     if (0 != $user{'showEdit'}) {
-        $editButton = '<button name="action" value="edit" type="submit">Edit mode</button><br />';
+        $editButton = '<button name="action" value="edit" type="submit">Edit this item</button><br />';
     }
 
     print $HTTP_HEADER_FOR_HTTPI;
@@ -430,13 +453,14 @@ $groupHtmlHeader
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 $session{'groupPath'}
-<table border=1 cellpadding=5 $widthTerm>
+<table border="1" cellpadding="5" $widthTerm>
 <tr><td>$item{'question'}</td></tr>
 <tr><td><button name="action" value="showAnswer" type="submit">Show answer</button></td></tr>
 </table>
 Interval for this item: $interval<br />
 Session: $sessionDuration<br />
 $editButton
+<button name="action" value="preferences" type="submit">Preferences</button><br />
 <a target="_new" href="mnemo?user=$parameters{'user'}&report">Show a report for $parameters{'user'}.</a>
 </form>
 </body>
@@ -521,7 +545,7 @@ sub answerPage() {
 
     my ($editButton) = '';
     if (0 != $user{'showEdit'}) {
-        $editButton = '<button name="action" value="edit" type="submit">Edit mode</button><br />';
+        $editButton = '<button name="action" value="edit" type="submit">Edit this item</button><br />';
     }
 
     print $HTTP_HEADER_FOR_HTTPI;
@@ -538,7 +562,7 @@ $groupHtmlHeader
 <input type="hidden" name="user" value="$parameters{'user'}">
 <input type="hidden" name="session" value="$parameters{'session'}">
 $session{'groupPath'}
-<table border=1 cellpadding=5 $widthTerm>
+<table border="1" cellpadding="5" $widthTerm>
 <tr><td>$item{'question'}</td></tr>
 <tr><td>$item{'answer'}</td></tr>
 </table>
@@ -552,6 +576,7 @@ $session{'groupPath'}
 Interval for this item: $interval<br />
 Session: $sessionDuration<br />
 $editButton
+<button name="action" value="preferences" type="submit">Preferences</button><br />
 <a target="_new" href="mnemo?user=$parameters{'user'}&report">Show a report for $parameters{'user'}.</a>
 </form>
 </body>
@@ -707,6 +732,143 @@ sub saveItem() {
     $session{'sessionStart'} = time;
     &writeSessionFile;
     $parameters{'session'} = $session{'sessionStart'};
+}
+
+sub preferencesPage() {
+    my ($msg) = @_;
+
+    my ($prettyDur) = &prettyInterval(&userSessionDuration);
+    if (&userSessionDuration != $user{'sessionDuration'}) {
+        $prettyDur = 'defaults to ' . $prettyDur;
+    }
+    my ($showEditChecked) = '';
+    if (0 != $user{'showEdit'}) {
+        $showEditChecked = 'checked="yes"';
+    }
+
+    print $HTTP_HEADER_FOR_HTTPI;
+    print <<"EndOfPreferencesPage";
+Content-type: text/html; charset=utf-8
+
+<html>
+<head><title>Mnemo</title></head>
+<body bgcolor="#ffffff">
+<form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
+$msg
+<input type="hidden" name="user" value="$parameters{'user'}">
+<input type="hidden" name="session" value="$parameters{'session'}">
+<table border="1" cellpadding="5">
+<tr>
+<td align="right"><strong>User:</strong></td>
+<td>$parameters{'user'}</td>
+</tr>
+<tr>
+<td align="right" valign="top"><strong>Change Password:</strong><br />
+    (leave blank for no change)</td>
+<td>
+    <table border="0">
+    <tr>
+    <td align="right">old:</td>
+    <td><input type="password" name="oldPass" /></td>
+    </tr>
+    <tr>
+    <td align="right">new:</td>
+    <td><input type="password" name="newPass1" /></td>
+    </tr>
+    <tr>
+    <td align="right"><nobr> new (again):</nobr></td>
+    <td><input type="password" name="newPass2" /></td>
+    </tr>
+    </table>
+</td>
+</tr>
+<tr>
+<td align="right" valign="top"><strong>Session Duration:</strong><br />
+    (seconds; 0 means default)</td>
+<td>$user{'sessionDuration'} ($prettyDur)<br />
+    <input type="text" name="sessionDuration" value="$user{'sessionDuration'}" /></td>
+</tr>
+<tr>
+<td align="right"><strong>Screen Width:</strong><br />
+    (pixels; 0 means full-width)</td>
+<td><input type="text" name="width" value="$user{'width'}" /></td>
+</tr>
+<tr>
+<td>&nbsp;</td>
+<td>
+<nobr>
+<input type="checkbox" name="showEdit" value="1" $showEditChecked />
+<strong>Show Edit Button</strong>
+</nobr>
+</td>
+</tr>
+<tr>
+<td align="right" valign="top"><strong>HTML Header:</strong><br />
+    (expert feature)</td>
+<td>
+<textarea name="htmlHeader">$user{'htmlHeader'}</textarea>
+</td>
+</tr>
+<tr>
+<td colspan="2" align="right">
+<nobr>
+<button name="action" value="cancel" type="submit">Cancel</button>
+<button name="action" value="save" type="submit">Save</button>
+</nobr>
+</td>
+</tr>
+</table>
+</form>
+</body>
+</html>
+EndOfPreferencesPage
+}
+
+sub savePreferences() {
+    # oldPass, newPass1, newPass2
+    if (length($parameters{'oldPass'} .
+               $parameters{'newPass1'} .
+               $parameters{'newPass2'}) > 0) {
+        if (length($parameters{'oldPass'}) == 0) {
+            &preferencesPage("Old password field must be filled.");
+            exit(1);
+        }
+        if ((length($parameters{'newPass1'}) == 0) ||
+            (length($parameters{'newPass2'}) == 0)) {
+            &preferencesPage("Both new password fields must be filled.");
+            exit(1);
+        }
+        if ($parameters{'oldPass'} ne $user{'password'}) {
+            &preferencesPage("Old password was not correct.");
+            exit(1);
+        }
+        if ($parameters{'newPass1'} ne $parameters{'newPass2'}) {
+            &preferencesPage("New password fields were not the same.");
+            exit(1);
+        }
+        $user{'password'} = $parameters{'newPass1'};
+    }
+
+    # sessionDuration
+    $user{'sessionDuration'} = 0 + $parameters{'sessionDuration'};
+    if ($user{'sessionDuration'} < 0) {
+        $user{'sessionDuration'} = 0;
+    }
+
+    # width
+    $user{'width'} = 0 + $parameters{'width'};
+    if ($user{'width'} < 0) {
+        $user{'width'} = 0;
+    }
+
+    # showEdit
+    $user{'showEdit'} = (($parameters{'showEdit'} == 1) ? 1 : 0);
+
+    # htmlHeader
+    $parameters{'htmlHeader'} =~ s/[\r\n]+/ /g; # eliminate newlines
+    $user{'htmlHeader'} = $parameters{'htmlHeader'};
+
+    &writeUserFile;
 }
 
 sub setInterval() {
@@ -1325,6 +1487,7 @@ sub writeUserFile() {
                       '#     sessionDuration (seconds, zero invokes default)',
                       '#     width during quiz mode (pixels)',
                       '#     show edit button (0=="NO")',
+                      '#     HTML header string (an expert feature)',
                       '#',
                       $user{'password'},
                       $user{'sessionDuration'},
@@ -1514,7 +1677,7 @@ Content-type: text/html; charset=utf-8
 <head><title>Mnemo</title></head>
 <body bgcolor="#ffffff">
 <form name="mnemo" action="mnemo" method="post" enctype="application/x-www-form-urlencoded">
-<table border=0>
+<table border="0">
 <tr><td>$msg</td></tr>
 <tr><td align="right">user <input type="text" name="user" value="$parameters{'user'}" /></td></tr>
 <tr><td align="right">password <input type="password" name="password" /></td></tr>
