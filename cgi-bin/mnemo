@@ -1587,6 +1587,8 @@ sub reportPage() {
     my ($d, $p, $u, $i, $t, $tt);
     my ($done, $due, $new, $dueTomorrow);
     my ($t_done, $t_due, $t_new, $t_dueTomorrow);
+    my ($totItems, $t_totItems);
+    my ($totInterval, $t_totInterval);
     $t = time;
     $tt = $t + (24 * 3600); # Time Tomorrow
     foreach $u (sort(@users)) {
@@ -1607,6 +1609,8 @@ sub reportPage() {
               "):\n";
 
         ($t_done, $t_due, $t_new, $t_dueTomorrow) = (0, 0, 0, 0);
+        $t_totItems = 0;
+        $t_totInterval = 0;
         $d = "$opsDir/data/$u/";
         foreach $p (`find "$d" -type f -name '*.mnemo' | sort`) {
             chomp($p);
@@ -1617,7 +1621,15 @@ sub reportPage() {
             }
             &readGroupFile;
             ($done, $due, $new, $dueTomorrow) = (0, 0, 0, 0);
+            $totItems = 0;
+            $totInterval = 0;
             foreach $i (values(%group)) {
+                $totItems++;
+                if (0 != $$i{'interval'}) {
+                    $totInterval += $$i{'interval'};
+                } else {
+                    $totInterval += $minimumInterval;
+                }
                 if (0 != $$i{'dueTime'}) {
                     if ($$i{'dueTime'} > $t) {
                         $done++;
@@ -1635,14 +1647,30 @@ sub reportPage() {
             $t_due += $due;
             $t_new += $new;
             $t_dueTomorrow += $dueTomorrow;
+            $t_totItems += $totItems;
+            $t_totInterval += $totInterval;
             if ($#users == 0) {
-                print "$new new, $due due, $done done ($dueTomorrow due tomorrow).\n";
+                print $new . ' new, ' .
+                      $due . ' due, ' .
+                      $done . ' done, ' .
+                      $dueTomorrow . ' due tomorrow, ' .
+                      'avg int ' . &prettyInterval(int($totInterval / $totItems)) .
+                      "\n";
             }
         }
         print '    TOTALS: ' .
-              "$t_new new, $t_due due, $t_done done ($t_dueTomorrow due tomorrow).\n";
+              $t_new . ' new, ' .
+              $t_due . ' due, ' .
+              $t_done . ' done, ' .
+              $t_dueTomorrow . ' due tomorrow, ' .
+              'avg int ' . &prettyInterval(int($t_totInterval / $t_totItems)) .
+              "\n";
     }
-    print "</pre></body></html>\n";
+    print "</pre>\n";
+    if ($#users == 0) {
+        print "<a href=\"mnemo?user=$users[0]\">Click here to start another session.</a>\n";
+    }
+    print "</body></html>\n";
 }
 
 sub passwordPage() {
