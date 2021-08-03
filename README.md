@@ -1,4 +1,14 @@
-WHAT IS MNEMO?
+# Mnemo
+
+- [What is Mnemo?](#what-is-mnemo)
+- [Using Mnemo](#using-mnemo)
+- [Installing Mnemo](#installing-mnemo)
+  - [Docker](#docker)
+- [My Experience](#my-experience)
+- [License (GNU General Public License)](#license-gnu-general-public-license)
+
+
+## [What is Mnemo?](#what-is-mnemo)
 
 "mnemo" is an education aide written by Rick Miller <rdmiller3@gmail.com>
 
@@ -15,7 +25,7 @@ you've been using mnemo for that subject.  All the items you memorized for
 your first quiz will be just as fresh as (or better than) they were before.
 
 
-USING MNEMO
+## [Using Mnemo](#using-mnemo)
 
 Initially, you log in and start out in "quiz mode".  You are shown a
 "question".  Your goal is to think of the "answer" for that question.  Then
@@ -70,7 +80,7 @@ It's really amazing how rapidly you can be brought back up to speed and
 learning new items again.
 
 
-INSTALLING MNEMO
+## [Installing Mnemo](#installing-mnemo)
 
 "mnemo" was originally intended for use with "HTTPi", but it's
 basically a CGI program so it was changed to work with Apache2.
@@ -83,8 +93,11 @@ local "mnemo_ops".  See the included "mnemo_ops" directory for a
 template of what should be found there.  Your "mnemo_ops" directory
 must be writable for the UID under which the CGI program will run.
 
+### [Docker](#docker)
 
-MY EXPERIENCE
+Mnemo now supports docker. To build and run an instance locally, simply run `sh refreshDocker.sh` from the root directory.
+
+## [My Experience](#my-experience)
 
 mnemo started as a flash-card script in Perl to help me learn Esperanto.
 (Visit http://Lernu.net for more about Esperanto.)  I started working on it
@@ -117,7 +130,7 @@ learned a small constructed-language called Toki Pona.  In all, I have
 memorized more than 8000 items in the past three and a half years.
 
 
-LICENSE (GNU General Public License)
+## [License (GNU General Public License)](#license-gnu-general-public-license)
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
