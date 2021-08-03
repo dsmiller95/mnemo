@@ -45,7 +45,7 @@ $qnaFieldRows = 4;
 $qnaFieldCols = 80;
 
 #$opsDir = $ENV{'HOME'} . '/httpi_mnemo/mnemo_ops';
-$opsDir = '/usr/lib/cgi-bin/mnemo_ops';
+$opsDir = '/usr/local/apache2/cgi-bin/mnemo_ops';
 
 $HOUR = 3600;
 $DAY = $HOUR * 24;
@@ -348,17 +348,17 @@ sub getNextDueItem() {
         if (0 == $$i{'dueTime'}) {
             push(@newItems, $i);
         } elsif ($t >= $$i{'dueTime'}) {
-            if ( (! defined(%item)) ||
+            if ( (! %item) ||
                  ($item{'interval'} < $$i{'interval'}) ) {
                 %item = %$i;
             }
         }
     }
-    if ( (! defined(%item)) && ($#newItems >= 0) ) {
+    if ( (! %item) && ($#newItems >= 0) ) {
         %item = %{$newItems[0]};
     }
     # Make sure %session is updated and written.
-    if (defined(%item)) {
+    if (%item) {
         $session{'itemUuid'} = $item{'uuid'};
     } else {
         $session{'itemUuid'} = '';
