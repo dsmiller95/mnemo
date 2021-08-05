@@ -1,6 +1,7 @@
 FROM httpd:2.4
 
 RUN apt-get update && apt-get install -y dos2unix make gcc cpanminus
+RUN cpanm Digest::MD5
 RUN cpanm Data::UUID
 
 RUN mkdir /usr/src/mnemo
