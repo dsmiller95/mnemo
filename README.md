@@ -95,7 +95,7 @@ must be writable for the UID under which the CGI program will run.
 
 ### [Docker](#docker)
 
-Mnemo now supports docker. To build and run an instance locally, simply run `sh refreshDocker.sh` from the root directory. This will start a new mnemo server, and mount the `mnemo_ops` directory to 
+Mnemo now supports docker. To build and run an instance locally, simply run `sh refreshDocker.sh` from the root directory. This will start a new mnemo server, and use the `%LOCALAPPDATA%/Mnemo` folder on your PC as the root for all configuration files. On windows, this is typically `C:\Users\<username>\AppData\Local\Mnemo`.
 
 ## [My Experience](#my-experience)
 
