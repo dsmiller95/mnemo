@@ -45,7 +45,7 @@ $qnaFieldRows = 4;
 $qnaFieldCols = 80;
 
 #$opsDir = $ENV{'HOME'} . '/httpi_mnemo/mnemo_ops';
-$opsDir = '/usr/local/apache2/cgi-bin/mnemo_ops';
+$opsDir = '/home/mnemo_ops';
 
 $HOUR = 3600;
 $DAY = $HOUR * 24;
@@ -233,7 +233,7 @@ sub readGroupFile() {
     my (@fileLines) = &readLinesFromFile("$opsDir/data/$parameters{'user'}/$session{'groupPath'}.mnemo");
     while ($#fileLines >= 0) {
         $line = shift(@fileLines);
-        chomp($line);
+        machomp($line);
         if (($uuid, $question, $answer, $interval, $dueTime) =
                 split(/\\/, $line)) {
             if ($uuid !~ /^\w{8}\-\w{4}\-\w{4}\-\w{4}\-\w{12}$/) {
@@ -1458,7 +1458,8 @@ sub readLinesFromFile() {
     open(INFILE, "<$path");
     my (@lines) = <INFILE>;
     close(INFILE);
-    chomp(@lines);
+
+    machomp(@lines);
 
     while (($#lines >= 0) && ($lines[0] =~ /^\#/)) {
         push(@fileHeaderLines, shift(@lines));
@@ -1467,6 +1468,14 @@ sub readLinesFromFile() {
 
     return(grep(/(^$)|(^[^\#])/, @lines));
 }
+
+# advanced chomp, used to digest files which have unknown line ending formats
+sub machomp() {
+    $/ = "\r\n";
+    chomp(@_);
+    $/ = "\n";
+    chomp(@_);
+};
 
 sub writeLinesToFile() {
     my ($path, @lines) = @_;
@@ -1871,8 +1880,11 @@ sub uriDecode() {
     return $decoded;
 }
 
+use Data::UUID;
+
 sub uuidgen() {
-    my ($uuid) = `uuidgen`;
+    my $ug    = Data::UUID->new;
+    my $uuid = $ug->create_str();
     chomp($uuid);
     return($uuid);
 }
