@@ -7,7 +7,7 @@ fi
 
 mkdir -p "$LOCALAPPDATA/Mnemo"
 
-docker build -t dnam/mnemo .&& \
+docker build -t dnam/mnemo:latest .&& \
 (docker stop mnemo-server && \
 docker rm mnemo-server || echo "no existing server") && \
 docker run -t -d \

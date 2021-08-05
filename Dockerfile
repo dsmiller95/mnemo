@@ -13,7 +13,7 @@ WORKDIR /usr/src/mnemo/cgi-bin
 RUN find . -type f -print0 | xargs -0 dos2unix 
 WORKDIR /usr/src/mnemo
 
-RUN apt-get --purge remove -y dos2unix make gcc cpanminus && rm -rf /var/lib/apt/lists/*
+RUN apt-get --purge remove -y dos2unix make gcc cpanminus && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 RUN sh install.sh
 
