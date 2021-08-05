@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 if [[ -z "${LOCALAPPDATA}" ]]; then
   echo "the LOCALAPPDATA environment variable is undefined. aborting."
   exit 1
