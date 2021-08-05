@@ -13,6 +13,6 @@ docker rm mnemo-server || echo "no existing server") && \
 docker run -t -d \
  --name=mnemo-server \
  --restart=no \
- -p 8080:80 \
+ -p 80:80 \
  --volume "$LOCALAPPDATA/Mnemo":/home/mnemo_ops \
  dnam/mnemo
